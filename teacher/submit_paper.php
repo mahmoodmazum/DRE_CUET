@@ -48,29 +48,32 @@ include __DIR__ . '/../src/includes/sidebar_teacher.php';
           <div class="form-group col-md-2"><label>Phase</label><input type="text" name="phase" class="form-control" value="<?= $editing ? $editData['phase'] : '' ?>"></div>
         </div>
 
-        <div class="form-group"><label>Project Title</label><input type="text" name="project_title" class="form-control" value="<?= $editing ? htmlspecialchars($editData['project_title']) : '' ?>" required></div>
+        <div class="form-group"><label>1. Project Title</label><small>(Please indicate the title of project; the title should be short and concise)</small><input type="text" name="project_title" class="form-control" value="<?= $editing ? htmlspecialchars($editData['project_title']) : '' ?>" required></div>
 
-        <div class="form-group"><label>Principal Investigator (PI)</label><input type="text" name="pi" class="form-control" value="<?= $editing ? htmlspecialchars($editData['pi']) : '' ?>"></div>
-        <div class="form-group"><label>Co-PI</label><input type="text" name="co_pi" class="form-control" value="<?= $editing ? htmlspecialchars($editData['co_pi']) : '' ?>"></div>
-        <div class="form-group"><label>Key Words (max 5)</label><input type="text" name="keywords" class="form-control" value="<?= $editing ? htmlspecialchars($editData['keywords']) : '' ?>"></div>
+        <div class="form-group"><label>2. <br>a) Principal Investigator (PI) <small>(Please indicate the name and the department/organization)</small></label><input type="text" name="pi" class="form-control" value="<?= $editing ? htmlspecialchars($editData['pi']) : '' ?>"></div>
+        <div class="form-group"><label>b) Co-Principal Investigator (Co-PI) <small>(Please indicate the name and the department/organization)</small></label><input type="text" name="co_pi" class="form-control" value="<?= $editing ? htmlspecialchars($editData['co_pi']) : '' ?>"></div>
+        <div class="form-group"><label>3. Key Words <small>(Please provide a maximum of 5 key words that describe the research of the project)</small></label><input type="text" name="keywords" class="form-control" value="<?= $editing ? htmlspecialchars($editData['keywords']) : '' ?>"></div>
 
-        <div class="form-group"><label>Specific Objectives</label><textarea name="specific_objectives" class="form-control" rows="4"><?= $editing ? htmlspecialchars($editData['specific_objectives']) : '' ?></textarea></div>
+        <div class="form-group"><label>4. Specific Objectives of the Project <small>(Please describe the measurable objectives of the project and define the 
+expected results. Use results-oriented wording with verbs such as “to define ...” to determine….”to identify)</small></label><textarea name="specific_objectives" class="form-control" rows="4"><?= $editing ? htmlspecialchars($editData['specific_objectives']) : '' ?></textarea></div>
 
-        <div class="form-group"><label>Research Background</label><textarea name="background" class="form-control" rows="4"><?= $editing ? htmlspecialchars($editData['background']) : '' ?></textarea></div>
+        <div class="form-group"><label>5. Research Background of the Project <small>(Please indicate if the project is new, modified or extended. Give a 
+summary of your literature review to indicate the originality of the proposed research and describe related research to 
+assist in assessing the research rationale and the potential for success)</small></label></div>
 
-        <div class="form-group"><label>Project Status</label>
+        <div class="form-group"><label>a) Project Status</label>
           <select name="project_status" class="form-control">
             <option value="New" <?= $editing && $editData['project_status']=='New' ? 'selected' : '' ?>>New</option>
             <option value="Modification" <?= $editing && $editData['project_status']=='Modification' ? 'selected' : '' ?>>Modification</option>
             <option value="Extension" <?= $editing && $editData['project_status']=='Extension' ? 'selected' : '' ?>>Extension</option>
           </select>
         </div>
+<div class="form-group"><label>b) Literature Review Summary</label><input name="literature_review_file" class="form-control" type="file"></input></div>
+        <div class="form-group"><label>Literature Review Summary remove</label><textarea name="literature_review" class="form-control" rows="4"><?= $editing ? htmlspecialchars($editData['literature_review']) : '' ?></textarea></div>
 
-        <div class="form-group"><label>Literature Review Summary</label><textarea name="literature_review" class="form-control" rows="4"><?= $editing ? htmlspecialchars($editData['literature_review']) : '' ?></textarea></div>
+        <div class="form-group"><label>c) Related Research</label><textarea name="related_research" class="form-control" rows="4"><?= $editing ? htmlspecialchars($editData['related_research']) : '' ?></textarea></div>
 
-        <div class="form-group"><label>Related Research</label><textarea name="related_research" class="form-control" rows="4"><?= $editing ? htmlspecialchars($editData['related_research']) : '' ?></textarea></div>
-
-        <div class="form-group"><label>Type of Research</label>
+        <div class="form-group"><label>6. Type of Research</label>
           <select name="research_type" class="form-control">
             <option value="Scientific" <?= $editing && $editData['research_type']=='Scientific' ? 'selected':'' ?>>Scientific Research (Fundamental)</option>
             <option value="Technology" <?= $editing && $editData['research_type']=='Technology' ? 'selected':'' ?>>Technology Development (Applied)</option>
@@ -80,23 +83,89 @@ include __DIR__ . '/../src/includes/sidebar_teacher.php';
 
         <!-- multiple large text areas -->
         <?php
-        $areas = ['beneficiaries'=>'Direct Customers/Beneficiaries','outputs'=>'Outputs Expected','transfer'=>'Technology Transfer/Diffusion','organizational_outcomes'=>'Organizational Outcomes','national_impacts'=>'National Impacts','external_org'=>'Outside Research Organizations involved','methodology'=>'Research Methodology','activities'=>'Project Activities','milestones'=>'Key Milestones','other_grants'=>'Any Other Research Grant','contractual_obligations'=>'Contractual Obligations','ip_ownership'=>'Ownership of IP'];
+        $areas = ['beneficiaries'=>'7. Direct Customers/Beneficiaries of the Project<small>
+        (please identify clearly the potential customers/beneficiaries of the research results and provide details of their relevance, e.g. size economic contribution, etc.)</small>',
+        'outputs'=>'8. Outputs Expected from the Project<small>(please give details)</small>',
+        'transfer'=>'9. Technology Transfer/Diffusion Approach<small>(please describe how the outputs of the project will be transferred 
+to the direct beneficiaries/customers. Please also state if the project outputs are sustainable, i.e. if they can be utilized
+without further external assistance)</small>','organizational_outcomes'=>'10.Organizational Outcomes Expected<small>(please give details)</small>',
+'national_impacts'=>'11. National Impacts Expected<small>(please give details)</small>',
+'external_org'=>'12. Outside Research Organizations/Industries Involved in the Project<small>(please identify all research 
+organizations collaborating in the project and describe their role/contribution to the project)</small>',
+];
         foreach($areas as $k=>$label): ?>
           <div class="form-group"><label><?= $label ?></label><textarea name="<?= $k ?>" class="form-control" rows="3"><?= $editing ? htmlspecialchars($editData[$k]) : '' ?></textarea></div>
         <?php endforeach; ?>
 
-        <div class="form-row">
-          <div class="form-group col-md-4"><label>Start Date</label><input type="date" name="start_date" class="form-control" value="<?= $editing ? $editData['start_date'] : '' ?>"></div>
-          <div class="form-group col-md-4"><label>Duration (months)</label><input type="number" name="duration_months" class="form-control" value="<?= $editing ? $editData['duration_months'] : '' ?>"></div>
-        </div>
 
         <!-- Project Team (JSON): we'll use textarea to hold JSON created by JS -->
         <div class="form-group">
-          <label>Project Team (add rows)</label>
-          <div id="teamRows"></div>
-          <button type="button" id="addTeamBtn" class="btn btn-sm btn-secondary mb-2">Add Team Member</button>
-          <input type="hidden" name="project_team" id="project_team" value='<?= $editing ? htmlspecialchars($editData['project_team']) : '[]' ?>'>
+  <label>13. Project Team (add rows)</label>
+  <small>
+    Please use the Staff Cost Estimation Form in Appendix-A as a reference and upload it once completed.
+  </small>
+  <div id="teamRows"></div>
+  <button type="button" id="addTeamBtn" class="btn btn-sm btn-secondary mb-2">Add Team Member</button>
+  <input type="hidden" name="project_team" id="project_team" 
+         value='<?= $editing ? htmlspecialchars($editData['project_team']) : '[]' ?>'>
+</div>
+
+<!-- Appendix-A download & upload -->
+<div class="form-group">
+  <!-- Download sample file -->
+  <a href="/files/Appendix-A-Sample.docx" 
+     class="btn btn-sm btn-info mb-2" 
+     download>
+     Download Sample Appendix-A
+  </a>
+
+  <!-- Upload completed file -->
+  <input type="file" 
+         name="appendix_a_file" 
+         id="appendix_a_file" 
+         class="form-control-file" 
+         accept=".doc,.docx,.pdf">
+</div>
+
+
+         <?php
+        $areas = ['methodology'=>'Research Methodology<small>(please describe the research methodology to be followed. Identify specialized equipment, 
+facilities and infrastructure which are required for the project and indicate which are new. Use separate sheets if 
+necessary)</small>','activities'=>'Project Activities<small>(please list and describe the main project activities, including those associated with the transfer of 
+the research results to customers/beneficiaries. The timing and duration of these activities are to be shown in the Gantt 
+chart as attached in Appendix-B)</small>','milestones'=>'Key Milestones<small>(please list and describe the principle milestones of the project. Timing of milestones is to be shown 
+in the Gantt chart as attached in Appendix B. A key milestone is reached when a significant phase in the project is 
+concluded. E.g. completion of test, review, commissioning of equipment, etc.)</small>'];
+        foreach($areas as $k=>$label): ?>
+          <div class="form-group"><label><?= $label ?></label><textarea name="<?= $k ?>" class="form-control" rows="3"><?= $editing ? htmlspecialchars($editData[$k]) : '' ?></textarea></div>
+        <?php endforeach; ?>
+        <div class="form-group">
+  <!-- Download sample file -->
+  <a href="/files/Appendix-B-Sample.docx" 
+     class="btn btn-sm btn-info mb-2" 
+     download>
+     Download Sample Appendix-B
+  </a>
+
+  <!-- Upload completed file -->
+  <input type="file" 
+         name="appendix_b_file" 
+         id="appendix_b_file" 
+         class="form-control-file" 
+         accept=".doc,.docx,.pdf">
+</div>
+<div class="form-row">
+  <!-- Appendix-A download & upload -->
+
+
+          <div class="form-group"><label>Duration</label></div>
+      </div>
+        <div class="form-row">
+          <div class="form-group col-md-4"><label>Start Date</label><input type="date" name="start_date" class="form-control" value="<?= $editing ? $editData['start_date'] : '' ?>"></div>
+          <div class="form-group col-md-4"><label>(months)</label><input type="number" name="duration_months" class="form-control" value="<?= $editing ? $editData['duration_months'] : '' ?>"></div>
         </div>
+
+       
 
         <!-- Staff costs (JSON) -->
         <div class="form-group">
@@ -113,7 +182,11 @@ include __DIR__ . '/../src/includes/sidebar_teacher.php';
           <button type="button" id="addExpenseBtn" class="btn btn-sm btn-secondary mb-2">Add Expense Row</button>
           <input type="hidden" name="direct_expenses" id="direct_expenses" value='<?= $editing ? htmlspecialchars($editData['direct_expenses']) : '[]' ?>'>
         </div>
-
+ <?php
+        $areas = ['other_grants'=>'Any Other Research Grant','contractual_obligations'=>'Contractual Obligations','ip_ownership'=>'Ownership of IP'];
+        foreach($areas as $k=>$label): ?>
+          <div class="form-group"><label><?= $label ?></label><textarea name="<?= $k ?>" class="form-control" rows="3"><?= $editing ? htmlspecialchars($editData[$k]) : '' ?></textarea></div>
+        <?php endforeach; ?>
         <div class="form-group">
           <label>Acknowledgement</label>
           <div class="form-check">
