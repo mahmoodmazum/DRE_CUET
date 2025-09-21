@@ -21,7 +21,6 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$id]);
 $submission = $stmt->fetch();
-
 if (!$submission) { exit("Submission not found"); }
 
 // Decode JSON for costs
@@ -31,6 +30,7 @@ $totalStaff = array_sum(array_column($staffCosts, 'amount'));
 $totalDirect = array_sum(array_column($directExpenses, 'amount'));
 $totalCost = $totalStaff + $totalDirect;
 
+// Fetch reviews/comments
 $stmt = $pdo->prepare("SELECT * FROM reviews WHERE submission_id = ?");
 $stmt->execute([$id]);
 $reviews = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -55,10 +55,28 @@ $externalReviewers = $pdo->query("
     WHERE user_id IS NULL AND external_name IS NOT NULL AND external_email IS NOT NULL
     ORDER BY external_name ASC
 ")->fetchAll();
+
+// Fetch submission attachments
+$stmt = $pdo->prepare("SELECT * FROM submission_attachments WHERE submission_id = ?");
+$stmt->execute([$id]);
+$attachments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$typeLabels = [
+    'l_rev'   => 'Literature Review',
+    'appendA' => 'Appendix A',
+    'appendB' => 'Appendix B',
+    'appendC' => 'Appendix C'
+];
+$attachmentsByType = [];
+foreach ($attachments as $file) {
+    $attachmentsByType[$file['type']] = $file;
+}
 ?>
 
 <div class="content-wrapper">
-  <section class="content-header"><div class="container-fluid"><h1>Submission Details</h1></div></section>
+  <section class="content-header">
+    <div class="container-fluid"><h1>Submission Details (Admin View)</h1></div>
+  </section>
+
   <section class="content">
     <div class="card">
       <div class="card-body">
@@ -119,6 +137,25 @@ $externalReviewers = $pdo->query("
 
         <h5>Total Cost: <?= number_format($totalCost,2) ?></h5>
 
+        <!-- Uploaded Files -->
+        <h4>Uploaded Files</h4>
+        <ul>
+        <?php foreach ($typeLabels as $type => $label): ?>
+            <li>
+                <strong><?= $label ?>:</strong>
+                <?php if (isset($attachmentsByType[$type])): 
+                    $file = $attachmentsByType[$type]; ?>
+                    <a href="/<?= htmlspecialchars($file['file_path']) ?>" target="_blank">
+                        <?= htmlspecialchars($file['original_name']) ?>
+                    </a>
+                    <small>(uploaded at <?= htmlspecialchars($file['uploaded_at']) ?>)</small>
+                <?php else: ?>
+                    <em>Not uploaded</em>
+                <?php endif; ?>
+            </li>
+        <?php endforeach; ?>
+        </ul>
+
         <!-- Reviewer Assignment -->
         <h4 class="mt-4">Reviewer Assignment</h4>
         <form method="post" action="assign_reviewer.php">
@@ -129,7 +166,6 @@ $externalReviewers = $pdo->query("
             <select name="internal_reviewer_id" class="form-control">
               <option value="">-- Select Internal Reviewer --</option>
               <?php foreach ($internalReviewers as $t): ?>
-
                 <option value="<?= $t['rp_id'] ?>" <?= in_array($t['rp_id'], $assignedReviewerIds) ? 'selected' : '' ?>>
                   <?= htmlspecialchars($t['name']) ?>
                 </option>
@@ -142,18 +178,16 @@ $externalReviewers = $pdo->query("
             <select name="external_reviewer_id" class="form-control">
               <option value="">-- Select External Reviewer --</option>
               <?php foreach ($externalReviewers as $er): ?>
-                <option value="<?= $er['id'] ?>" 
-                  <?= in_array($er['id'], $assignedReviewerIds) ? 'selected' : '' ?>>
+                <option value="<?= $er['id'] ?>" <?= in_array($er['id'], $assignedReviewerIds) ? 'selected' : '' ?>>
                   <?= htmlspecialchars($er['external_name']) ?> (<?= htmlspecialchars($er['external_email']) ?>)
                 </option>
               <?php endforeach; ?>
             </select>
           </div>
 
-
           <div class="form-group">
             <label>Comments</label>
-            <textarea class="form-control" name="comments"><?php echo htmlspecialchars($comments); ?></textarea>
+            <textarea class="form-control" name="comments"><?= htmlspecialchars($comments) ?></textarea>
           </div>
 
           <button type="submit" class="btn btn-success">Save Assignment</button>

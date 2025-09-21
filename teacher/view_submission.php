@@ -32,6 +32,11 @@ $directExpenses = json_decode($submission['direct_expenses'], true) ?: [];
 $totalStaff = array_sum(array_column($staffCosts, 'amount'));
 $totalDirect = array_sum(array_column($directExpenses, 'amount'));
 $totalCost = $totalStaff + $totalDirect;
+
+// Fetch attached files
+$filesStmt = $pdo->prepare("SELECT * FROM submission_attachments WHERE submission_id = ?");
+$filesStmt->execute([$id]);
+$attachments = $filesStmt->fetchAll();
 ?>
 
 <div class="content-wrapper">
@@ -43,6 +48,7 @@ $totalCost = $totalStaff + $totalDirect;
     <div class="card">
       <div class="card-body">
 
+        <!-- Existing submission details table -->
         <table class="table table-bordered">
           <tbody>
             <tr><th style="width:30%;">Project Title</th><td><?= htmlspecialchars($submission['project_title']) ?></td></tr>
@@ -66,35 +72,34 @@ $totalCost = $totalStaff + $totalDirect;
             <tr><th>National Impacts</th><td><?= nl2br(htmlspecialchars($submission['national_impacts'] ?? 'N/A')) ?></td></tr>
             <tr><th>External Organizations</th><td><?= nl2br(htmlspecialchars($submission['external_org'] ?? 'N/A')) ?></td></tr>
             <tr>
-  <th>Project Team</th>
-  <td>
-    <?php 
-      $team = json_decode($submission['project_team'], true);
-      if ($team && is_array($team) && count($team) > 0): ?>
-        <table class="table table-bordered table-sm mb-0">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Organization</th>
-              <th>Man-Months</th>
+              <th>Project Team</th>
+              <td>
+                <?php 
+                  $team = json_decode($submission['project_team'], true);
+                  if ($team && is_array($team) && count($team) > 0): ?>
+                    <table class="table table-bordered table-sm mb-0">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Organization</th>
+                          <th>Man-Months</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <?php foreach ($team as $member): ?>
+                          <tr>
+                            <td><?= htmlspecialchars($member['name'] ?? '') ?></td>
+                            <td><?= htmlspecialchars($member['org'] ?? '') ?></td>
+                            <td><?= htmlspecialchars($member['mm'] ?? '') ?></td>
+                          </tr>
+                        <?php endforeach; ?>
+                      </tbody>
+                    </table>
+                  <?php else: ?>
+                    N/A
+                <?php endif; ?>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($team as $member): ?>
-              <tr>
-                <td><?= htmlspecialchars($member['name'] ?? '') ?></td>
-                <td><?= htmlspecialchars($member['org'] ?? '') ?></td>
-                <td><?= htmlspecialchars($member['mm'] ?? '') ?></td>
-              </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
-      <?php else: ?>
-        N/A
-    <?php endif; ?>
-  </td>
-</tr>
-
             <tr><th>Research Methodology</th><td><?= nl2br(htmlspecialchars($submission['methodology'] ?? 'N/A')) ?></td></tr>
             <tr><th>Project Activities</th><td><?= nl2br(htmlspecialchars($submission['activities'] ?? 'N/A')) ?></td></tr>
             <tr><th>Key Milestones</th><td><?= nl2br(htmlspecialchars($submission['milestones'] ?? 'N/A')) ?></td></tr>
@@ -154,6 +159,42 @@ $totalCost = $totalStaff + $totalDirect;
             <tr><th>Acknowledgement</th><td><?= $submission['acknowledgement'] ? 'Yes' : 'No' ?></td></tr>
           </tbody>
         </table>
+
+        <!-- Uploaded Files Section -->
+        <h4>Uploaded Files</h4>
+
+<?php
+$typeLabels = [
+    'l_rev'    => 'Literature Review',
+    'appendA'  => 'Appendix A',
+    'appendB'  => 'Appendix B',
+    'appendC'  => 'Appendix C'
+];
+
+// Group attachments by type
+$attachmentsByType = [];
+foreach ($attachments as $file) {
+    $attachmentsByType[$file['type']] = $file;
+}
+?>
+
+<ul>
+<?php foreach ($typeLabels as $type => $label): ?>
+    <li>
+        <strong><?= $label ?>:</strong>
+        <?php if (isset($attachmentsByType[$type])): 
+            $file = $attachmentsByType[$type]; ?>
+            <a href="/<?= htmlspecialchars($file['file_path']) ?>" target="_blank">
+                <?= htmlspecialchars($file['original_name']) ?>
+            </a>
+            <small>(uploaded at <?= htmlspecialchars($file['uploaded_at']) ?>)</small>
+        <?php else: ?>
+            <em>Not uploaded</em>
+        <?php endif; ?>
+    </li>
+<?php endforeach; ?>
+</ul>
+
 
         <div class="mt-3">
           <?php if ($canEditDelete): ?>

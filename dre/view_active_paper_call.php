@@ -42,6 +42,7 @@ $submissions = $stmt->fetchAll();
               <th>Department</th>
               <th>Principal Investigator (PI)</th>
               <th>Total Cost</th>
+              <th>Status</th>
               <th>Reviewer Assignment</th>
               <th>Comment</th>
               <th>Actions</th>
@@ -93,6 +94,7 @@ foreach ($externalReviewers as $er){
               <td><?= htmlspecialchars($s['department_name'] ?? 'N/A') ?></td>
               <td><?= htmlspecialchars($s['pi'] ?? 'N/A') ?></td>
               <td><?= number_format($totalCost,2) ?></td>
+              <td><?= htmlspecialchars($s['status'] ?? 'N/A') ?></td>
               <td>
                 <?php if ($rev): ?>
                     <span class="badge badge-primary"><?php echo $msgI; ?></span>

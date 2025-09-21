@@ -1,3 +1,4 @@
+
 <?php
 require __DIR__ . '/../src/lib/Auth.php';
 require __DIR__ . '/../src/db.php';
@@ -8,8 +9,6 @@ $call = $pdo->query("SELECT * FROM paper_calls WHERE deadline_date >= CURDATE() 
 if ($user['role'] !== 'teacher' || !$call) { http_response_code(403); exit('Access denied'); }
 
 $departments = $pdo->query("SELECT * FROM departments ORDER BY name")->fetchAll();
-
-
 
 // If edit mode
 $editing = false;
@@ -69,7 +68,6 @@ assist in assessing the research rationale and the potential for success)</small
           </select>
         </div>
 <div class="form-group"><label>b) Literature Review Summary</label><input name="literature_review_file" class="form-control" type="file"></input></div>
-        <div class="form-group"><label>Literature Review Summary remove</label><textarea name="literature_review" class="form-control" rows="4"><?= $editing ? htmlspecialchars($editData['literature_review']) : '' ?></textarea></div>
 
         <div class="form-group"><label>c) Related Research</label><textarea name="related_research" class="form-control" rows="4"><?= $editing ? htmlspecialchars($editData['related_research']) : '' ?></textarea></div>
 
@@ -97,7 +95,6 @@ organizations collaborating in the project and describe their role/contribution 
           <div class="form-group"><label><?= $label ?></label><textarea name="<?= $k ?>" class="form-control" rows="3"><?= $editing ? htmlspecialchars($editData[$k]) : '' ?></textarea></div>
         <?php endforeach; ?>
 
-
         <!-- Project Team (JSON): we'll use textarea to hold JSON created by JS -->
         <div class="form-group">
   <label>13. Project Team (add rows)</label>
@@ -110,55 +107,26 @@ organizations collaborating in the project and describe their role/contribution 
          value='<?= $editing ? htmlspecialchars($editData['project_team']) : '[]' ?>'>
 </div>
 
-<!-- Appendix-A download & upload -->
-<div class="form-group">
-  <!-- Download sample file -->
-  <a href="/files/Appendix-A-Sample.docx" 
-     class="btn btn-sm btn-info mb-2" 
-     download>
-     Download Sample Appendix-A
-  </a>
 
-  <!-- Upload completed file -->
-  <input type="file" 
-         name="appendix_a_file" 
-         id="appendix_a_file" 
-         class="form-control-file" 
-         accept=".doc,.docx,.pdf">
-</div>
 
 
          <?php
-        $areas = ['methodology'=>'Research Methodology<small>(please describe the research methodology to be followed. Identify specialized equipment, 
+        $areas = ['methodology'=>'14. Research Methodology<small>(please describe the research methodology to be followed. Identify specialized equipment, 
 facilities and infrastructure which are required for the project and indicate which are new. Use separate sheets if 
-necessary)</small>','activities'=>'Project Activities<small>(please list and describe the main project activities, including those associated with the transfer of 
+necessary)</small>','activities'=>'15. Project Activities<small>(please list and describe the main project activities, including those associated with the transfer of 
 the research results to customers/beneficiaries. The timing and duration of these activities are to be shown in the Gantt 
-chart as attached in Appendix-B)</small>','milestones'=>'Key Milestones<small>(please list and describe the principle milestones of the project. Timing of milestones is to be shown 
+chart as attached in Appendix-B)</small>','milestones'=>'16. Key Milestones<small>(please list and describe the principle milestones of the project. Timing of milestones is to be shown 
 in the Gantt chart as attached in Appendix B. A key milestone is reached when a significant phase in the project is 
 concluded. E.g. completion of test, review, commissioning of equipment, etc.)</small>'];
         foreach($areas as $k=>$label): ?>
           <div class="form-group"><label><?= $label ?></label><textarea name="<?= $k ?>" class="form-control" rows="3"><?= $editing ? htmlspecialchars($editData[$k]) : '' ?></textarea></div>
         <?php endforeach; ?>
-        <div class="form-group">
-  <!-- Download sample file -->
-  <a href="/files/Appendix-B-Sample.docx" 
-     class="btn btn-sm btn-info mb-2" 
-     download>
-     Download Sample Appendix-B
-  </a>
-
-  <!-- Upload completed file -->
-  <input type="file" 
-         name="appendix_b_file" 
-         id="appendix_b_file" 
-         class="form-control-file" 
-         accept=".doc,.docx,.pdf">
-</div>
+        
 <div class="form-row">
   <!-- Appendix-A download & upload -->
 
 
-          <div class="form-group"><label>Duration</label></div>
+          <div class="form-group"><label>17. Duration</label></div>
       </div>
         <div class="form-row">
           <div class="form-group col-md-4"><label>Start Date</label><input type="date" name="start_date" class="form-control" value="<?= $editing ? $editData['start_date'] : '' ?>"></div>
@@ -169,7 +137,7 @@ concluded. E.g. completion of test, review, commissioning of equipment, etc.)</s
 
         <!-- Staff costs (JSON) -->
         <div class="form-group">
-          <label>Staff Costs (year-wise)</label>
+          <label>18. Additional Staff Costs<small>(please include the yearly staff costs of the project. Present staff costs are not included. Give details of calculation based on Appendix-A)</small></label>
           <div id="staffCosts"></div>
           <button type="button" id="addStaffBtn" class="btn btn-sm btn-secondary mb-2">Add Staff Cost Row</button>
           <input type="hidden" name="staff_costs" id="staff_costs" value='<?= $editing ? htmlspecialchars($editData['staff_costs']) : '[]' ?>'>
@@ -177,16 +145,68 @@ concluded. E.g. completion of test, review, commissioning of equipment, etc.)</s
 
         <!-- Direct expenses (JSON) -->
         <div class="form-group">
-          <label>Direct Expenses</label>
+          <label>19. Direct Project Expenses<small>(please include the yearly direct expenses of the project. For computation. Use the Direct Expenses Estimation from as attached in Appendix-C)</small></label>
           <div id="directExpenses"></div>
           <button type="button" id="addExpenseBtn" class="btn btn-sm btn-secondary mb-2">Add Expense Row</button>
           <input type="hidden" name="direct_expenses" id="direct_expenses" value='<?= $editing ? htmlspecialchars($editData['direct_expenses']) : '[]' ?>'>
         </div>
+
+
  <?php
-        $areas = ['other_grants'=>'Any Other Research Grant','contractual_obligations'=>'Contractual Obligations','ip_ownership'=>'Ownership of IP'];
+        $areas = ['other_grants'=>'20. Any Other Research Grant<small>(Please mention if so)</small>','contractual_obligations'=>'21. Contractual Obligations under this Project<small>(please indicate any contractual obligation with third parties that will be entered in for this project)</small>','ip_ownership'=>'Ownership of Intellectual Property Rights<small>(Please indicate the organization(s) that will own the intellectual property rights that may from this project)</small>'];
         foreach($areas as $k=>$label): ?>
           <div class="form-group"><label><?= $label ?></label><textarea name="<?= $k ?>" class="form-control" rows="3"><?= $editing ? htmlspecialchars($editData[$k]) : '' ?></textarea></div>
         <?php endforeach; ?>
+
+        <div class="form-group">
+  <!-- Download sample file -->
+  <a href="/files/Appendix-A-Sample.docx" 
+     class="btn btn-sm btn-info mb-2" 
+     download>
+     Download Sample Appendix-A
+  </a>
+<label>Upload Appendix-A</label>
+  <!-- Upload completed file -->
+  <input type="file" 
+         name="appendix_a_file" 
+         id="appendix_a_file" 
+         class="form-control-file" 
+         accept=".doc,.docx,.pdf">
+</div>
+
+<div class="form-group">
+  <!-- Download sample file -->
+
+  <a href="/files/Appendix-A-Sample.docx" 
+     class="btn btn-sm btn-info mb-2" 
+     download>
+     Download Sample Appendix-B
+  </a>
+<label>Upload Appendix-B</label>
+  <!-- Upload completed file -->
+  <input type="file" 
+         name="appendix_b_file" 
+         id="appendix_b_file" 
+         class="form-control-file" 
+         accept=".doc,.docx,.pdf">
+</div>
+
+<div class="form-group">
+  <!-- Download sample file -->
+  <a href="/files/Appendix-A-Sample.docx" 
+     class="btn btn-sm btn-info mb-2" 
+     download>
+     Download Sample Appendix-C
+  </a>
+
+  <!-- Upload completed file -->
+  <label>Upload Appendix-C</label>
+  <input type="file" 
+         name="appendix_c_file" 
+         id="appendix_c_file" 
+         class="form-control-file" 
+         accept=".doc,.docx,.pdf">
+</div>
         <div class="form-group">
           <label>Acknowledgement</label>
           <div class="form-check">
@@ -224,7 +244,7 @@ $(function(){
       $('#teamRows').append(`<div class="form-row mb-2">
         <div class="col"><input class="form-control" placeholder="Name" value="${t.name||''}" data-i="${i}" data-key="name"></div>
         <div class="col"><input class="form-control" placeholder="Organization" value="${t.org||''}" data-i="${i}" data-key="org"></div>
-        <div class="col"><input type="number" class="form-control" placeholder="Man month" value="${t.mm||0}" data-i="${i}" data-key="mm"></div>
+        <div class="col"><input type="number" class="form-control" placeholder="Man month" value="${t.mm ? t.mm : ''}"  data-i="${i}" data-key="mm"></div>
         <div class="col-auto"><button class="btn btn-danger rmTeam" data-i="${i}">Remove</button></div>
       </div>`);
     });
@@ -284,3 +304,4 @@ $(function(){
   $(document).on('click', '.rmExp', function(){ expenses.splice($(this).data('i'),1); renderExpenses(); });
 });
 </script>
+
