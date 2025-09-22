@@ -61,7 +61,6 @@ $stmt = $pdo->prepare("SELECT * FROM submission_attachments WHERE submission_id 
 $stmt->execute([$id]);
 $attachments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $typeLabels = [
-    'l_rev'   => 'Literature Review',
     'appendA' => 'Appendix A',
     'appendB' => 'Appendix B',
     'appendC' => 'Appendix C'
@@ -74,7 +73,7 @@ foreach ($attachments as $file) {
 
 <div class="content-wrapper">
   <section class="content-header">
-    <div class="container-fluid"><h1>Submission Details (Admin View)</h1></div>
+    <div class="container-fluid"><h1>Submission Details</h1></div>
   </section>
 
   <section class="content">
@@ -88,14 +87,22 @@ foreach ($attachments as $file) {
           <tbody>
             <tr><th>Project Title</th><td><?= htmlspecialchars($submission['project_title']) ?></td></tr>
             <tr><th>Status</th><td><?= htmlspecialchars($submission['status']) ?></td></tr>
-            <tr><th>PI</th><td><?= htmlspecialchars($submission['pi']) ?></td></tr>
-            <tr><th>Co-PI</th><td><?= htmlspecialchars($submission['co_pi']) ?></td></tr>
+            <tr><th>Principal Investigator (PI)</th><td><?= htmlspecialchars($submission['pi']) ?></td></tr>
+            <tr><th>Co-Principal Investigator (Co-PI)</th><td><?= htmlspecialchars($submission['co_pi']) ?></td></tr>
             <tr><th>Year</th><td><?= htmlspecialchars($submission['year']) ?></td></tr>
             <tr><th>Phase</th><td><?= htmlspecialchars($submission['phase']) ?></td></tr>
-            <tr><th>Keywords</th><td><?= htmlspecialchars($submission['keywords']) ?></td></tr>
-            <tr><th>Specific Objectives</th><td><?= nl2br(htmlspecialchars($submission['specific_objectives'])) ?></td></tr>
-            <tr><th>Background</th><td><?= nl2br(htmlspecialchars($submission['background'])) ?></td></tr>
+            <tr><th>Key Words </th><td><?= htmlspecialchars($submission['keywords']) ?></td></tr>
+            <tr><th>Specific Objectives of the Project</th><td><?= nl2br(htmlspecialchars($submission['specific_objectives'])) ?></td></tr>
             <tr><th>Project Status</th><td><?= htmlspecialchars($submission['project_status']) ?></td></tr>
+            <tr><th>Literature Review Summary</th><td><a href="/DRE/<?= htmlspecialchars($attachmentsByType['l_rev']['file_path']) ?>" target="_blank">
+                        <?= htmlspecialchars($attachmentsByType['l_rev']['original_name']) ?>
+                    </a></td></tr>
+            <tr><th>Related Research</th><td><?= htmlspecialchars($submission['related_research']) ?></td></tr>
+            <tr><th>Type of Research</th><td><?= htmlspecialchars($submission['research_type']) ?></td></tr>
+            <tr><th>Direct Customers/Beneficiaries of the Project</th><td><?= htmlspecialchars($submission['beneficiaries']) ?></td></tr>
+            <tr><th>Outputs Expected from the Project</th><td><?= htmlspecialchars($submission['outputs']) ?></td></tr>
+            <tr><th>Technology Transfer/Diffusion Approach</th><td><?= htmlspecialchars($submission['transfer']) ?></td></tr>
+            <tr><th>Organizational Outcomes Expected</th><td><?= htmlspecialchars($submission['organizational_outcomes']) ?></td></tr>
           </tbody>
         </table>
 
