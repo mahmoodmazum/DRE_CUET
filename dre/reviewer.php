@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-include __DIR__ . '/../src/includes/header.php';
+include __DIR__ . '/../src/includes/custom_header.php';
 include __DIR__ . '/../src/includes/sidebar_dre.php';
 
 $teachers = $pdo->query("SELECT id, name, email FROM users WHERE role='teacher'")->fetchAll();
@@ -78,4 +78,4 @@ $reviewers = $pdo->query("SELECT rp.id, rp.user_id, rp.external_name, rp.externa
   </section>
 </div>
 
-<?php include __DIR__ . '/../src/includes/footer.php'; ?>
+<?php include __DIR__ . '/../src/includes/custom_footer.php'; ?>

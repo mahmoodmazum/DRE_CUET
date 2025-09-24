@@ -1,18 +1,15 @@
 <?php
-require __DIR__ . '/../src/lib/Auth.php';
+session_start();
 require __DIR__ . '/../src/db.php';
-Auth::requireLogin();
-$user = $_SESSION['user'];
 
 // Get reviewer_pool ID for this user
 $stmt = $pdo->prepare("
-    SELECT rp.id AS reviewer_pool_id 
-    FROM users u
-    INNER JOIN reviewer_pool rp ON u.id = rp.user_id
-    WHERE u.email = ?
+    SELECT rp.id AS reviewer_pool_id from
+    reviewer_pool rp 
+    WHERE rp.external_email = ?
     LIMIT 1
 ");
-$stmt->execute([$user['email']]);
+$stmt->execute([$_SESSION['reviewer_email']]);
 $reviewer = $stmt->fetch();
 if (!$reviewer) exit('You are not a registered reviewer.');
 
@@ -71,7 +68,7 @@ $colors = [
 ?>
 
 <?php include __DIR__ . '/../src/includes/header.php'; ?>
-<?php include __DIR__ . '/../src/includes/sidebar_teacher.php'; ?>
+<?php include __DIR__ . '/../src/includes/sidebar_external.php'; ?>
 
 <div style="padding:24px; font-family: 'Roboto', sans-serif; background-color: <?= $colors['light'] ?>; min-height:100vh;">
 
@@ -137,7 +134,7 @@ $colors = [
   <!-- Reviewer Evaluation Form -->
   <div style="background:white; padding:16px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
     <h4 style="color: <?= $colors['dark'] ?>; margin-bottom:16px;">Reviewer Evaluation Marks</h4>
-    <form id="reviewForm" method="post" action="submit_review.php">
+    <form id="reviewForm" method="post" action="submit_review_external.php">
       <input type="hidden" name="review_id" value="<?= $review_id ?>">
       <input type="hidden" name="submission_id" value="<?= $submission_id ?>">
 
@@ -176,7 +173,7 @@ $colors = [
 
       <div style="margin-top:16px; display:flex; gap:12px;">
         <button type="submit" style="background-color: <?= $colors['success'] ?>; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:500;">Submit Review</button>
-        <a href="review_paper.php" style="background-color: <?= $colors['secondary'] ?>; color:white; padding:10px 20px; border-radius:6px; text-decoration:none; font-weight:500;">Back</a>
+        <a href="review_paper_external.php" style="background-color: <?= $colors['secondary'] ?>; color:white; padding:10px 20px; border-radius:6px; text-decoration:none; font-weight:500;">Back</a>
       </div>
     </form>
   </div>
