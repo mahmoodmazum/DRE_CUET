@@ -5,7 +5,7 @@ Auth::requireLogin();
 $user = $_SESSION['user'];
 if ($user['role'] !== 'dre_admin') { http_response_code(403); exit('Access denied'); }
 
-include __DIR__ . '/../src/includes/header.php';
+include __DIR__ . '/../src/includes/custom_header.php';
 include __DIR__ . '/../src/includes/sidebar_dre.php';
 
 // quick stats: total teachers, total active calls, committee size, reviewer size
@@ -31,4 +31,4 @@ $reviewers = $pdo->query("SELECT COUNT(*) FROM reviewer_pool")->fetchColumn();
   </section>
 </div>
 
-<?php include __DIR__ . '/../src/includes/footer.php'; ?>
+<?php include __DIR__ . '/../src/includes/custom_footer.php'; ?>

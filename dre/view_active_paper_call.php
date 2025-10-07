@@ -5,7 +5,7 @@ Auth::requireLogin();
 $user = $_SESSION['user'];
 if ($user['role'] !== 'dre_admin') { http_response_code(403); exit('Access denied'); }
 
-include __DIR__ . '/../src/includes/header.php';
+include __DIR__ . '/../src/includes/custom_header.php';
 include __DIR__ . '/../src/includes/sidebar_dre.php';
 
 $paper_call_id = $_GET['id'] ?? null;
@@ -42,7 +42,6 @@ $submissions = $stmt->fetchAll();
               <th>Department</th>
               <th>Principal Investigator (PI)</th>
               <th>Total Cost</th>
-              <th>Status</th>
               <th>Reviewer Assignment</th>
               <th>Comment</th>
               <th>Actions</th>
@@ -94,7 +93,6 @@ foreach ($externalReviewers as $er){
               <td><?= htmlspecialchars($s['department_name'] ?? 'N/A') ?></td>
               <td><?= htmlspecialchars($s['pi'] ?? 'N/A') ?></td>
               <td><?= number_format($totalCost,2) ?></td>
-              <td><?= htmlspecialchars($s['status'] ?? 'N/A') ?></td>
               <td>
                 <?php if ($rev): ?>
                     <span class="badge badge-primary"><?php echo $msgI; ?></span>
@@ -118,7 +116,7 @@ foreach ($externalReviewers as $er){
   </section>
 </div>
 
-<?php include __DIR__ . '/../src/includes/footer.php'; ?>
+<?php include __DIR__ . '/../src/includes/custom_footer.php'; ?>
 
 <script>
 $(function(){ 

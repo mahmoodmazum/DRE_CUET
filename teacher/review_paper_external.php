@@ -1,19 +1,18 @@
 <?php
-require __DIR__ . '/../src/lib/Auth.php';
+session_start();
 require __DIR__ . '/../src/db.php';
-Auth::requireLogin();
-$user = $_SESSION['user'];
+
 
 // Find reviewer_pool id for this user
 $stmt = $pdo->prepare("
-    SELECT rp.id AS reviewer_pool_id 
-    FROM users u
-    INNER JOIN reviewer_pool rp ON u.id = rp.user_id
-    WHERE u.email = ?
+    SELECT rp.id AS reviewer_pool_id
+    FROM reviewer_pool rp where 
+    rp.external_email = ?
     LIMIT 1
 ");
-$stmt->execute([$user['email']]);
-$reviewer = $stmt->fetch();
+$stmt->execute([$_SESSION['reviewer_email']]);
+
+$reviewer = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$reviewer) {
     exit('You are not registered as a reviewer.');
@@ -35,7 +34,7 @@ $stmt->execute([$reviewerPoolId]);
 $reviews = $stmt->fetchAll();
 
 include __DIR__ . '/../src/includes/header.php';
-include __DIR__ . '/../src/includes/sidebar_teacher.php';
+include __DIR__ . '/../src/includes/sidebar_external.php';
 
 // Define 8-color palette for table
 $colors = [
@@ -81,12 +80,12 @@ $colors = [
                 <td style="padding:8px;"><?= htmlspecialchars($r['deadline_date']) ?></td>
                 <td style="padding:8px;"><?= htmlspecialchars($r['status']) ?></td>
                 <td style="padding:8px;">
-                  <a href="review_submission.php?id=<?= $r['submission_id'] ?>&review_id=<?= $r['review_id'] ?>" 
+                  <a href="review_submission_external.php?id=<?= $r['submission_id'] ?>&review_id=<?= $r['review_id'] ?>" 
                      style="background-color: <?= $colors['primary'] ?>; color:white; padding:6px 12px; border-radius:4px; text-decoration:none; margin-right:4px;">
                      Review
                   </a>
 
-                  <a href="bank_info.php?id=<?= $r['submission_id'] ?>&review_id=<?= $r['review_id'] ?>" 
+                  <a href="bank_info_external.php?id=<?= $r['submission_id'] ?>&review_id=<?= $r['review_id'] ?>" 
                      style="background-color: <?= $colors['secondary'] ?>; color:white; padding:6px 12px; border-radius:4px; text-decoration:none;">
                      Bank Info
                   </a>

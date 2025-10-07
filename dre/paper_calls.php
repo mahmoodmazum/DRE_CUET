@@ -5,7 +5,7 @@ Auth::requireLogin();
 $user = $_SESSION['user'];
 if ($user['role'] !== 'dre_admin') { http_response_code(403); exit('Access denied'); }
 
-include __DIR__ . '/../src/includes/header.php';
+include __DIR__ . '/../src/includes/custom_header.php';
 include __DIR__ . '/../src/includes/sidebar_dre.php';
 
 $calls = $pdo->query("
@@ -116,7 +116,7 @@ $i=1;
   </div>
 </div>
 
-<?php include __DIR__ . '/../src/includes/footer.php'; ?>
+<?php include __DIR__ . '/../src/includes/custom_footer.php'; ?>
 
 <script>
 $(function(){ $('#callsTable').DataTable({responsive:true}); });

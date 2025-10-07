@@ -1,9 +1,6 @@
 <?php
-require __DIR__ . '/../src/lib/Auth.php';
+session_start();
 require __DIR__ . '/../src/db.php';
-Auth::requireLogin();
-
-$user = $_SESSION['user'];
 
 // Validate params
 $submission_id = $_GET['id'] ?? null;
@@ -13,15 +10,13 @@ if (!$submission_id || !$review_id) exit('Invalid request.');
 
 // Check if this review belongs to logged-in reviewer
 $stmt = $pdo->prepare("
-    SELECT r.id AS review_id, s.project_title, u.name AS submitter_name
+    SELECT r.id AS review_id, s.project_title
     FROM reviews r
     INNER JOIN submissions s ON r.submission_id = s.id
-    INNER JOIN users u ON s.user_id = u.id
     INNER JOIN reviewer_pool rp ON r.reviewer_id = rp.id
-    INNER JOIN users ru ON rp.user_id = ru.id
-    WHERE r.id = ? AND ru.email = ?
+    WHERE r.id = ? AND rp.external_email = ?
 ");
-$stmt->execute([$review_id, $user['email']]);
+$stmt->execute([$review_id, $_SESSION['reviewer_email']]);
 $review = $stmt->fetch();
 if (!$review) exit("You are not authorized to view this review.");
 
@@ -61,12 +56,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $msg = "Bank info submitted successfully.";
     }
 
-    header("Location: review_paper.php?msg=" . urlencode($msg));
+    header("Location: review_paper_external.php?msg=" . urlencode($msg));
     exit;
 }
 
 include __DIR__ . '/../src/includes/header.php';
-include __DIR__ . '/../src/includes/sidebar_teacher.php';
+include __DIR__ . '/../src/includes/sidebar_external.php';
 ?>
 
 <div style="padding:24px; font-family: 'Roboto', sans-serif; background-color: <?= $colors['light'] ?>; min-height:100vh;">

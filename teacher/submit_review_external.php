@@ -1,8 +1,17 @@
 <?php
-require __DIR__ . '/../src/lib/Auth.php';
+session_start();
 require __DIR__ . '/../src/db.php';
-Auth::requireLogin();
-$user = $_SESSION['user'];
+
+$stmt = $pdo->prepare("
+    SELECT rp.id AS reviewer_pool_id from
+    reviewer_pool rp 
+    WHERE rp.external_email = ?
+    LIMIT 1
+");
+$stmt->execute([$_SESSION['reviewer_email']]);
+$reviewer = $stmt->fetch();
+if (!$reviewer) exit('You are not a registered reviewer.');
+
 $submission_id=$_POST['submission_id'] ?? null;
 $review_id = $_POST['review_id'] ?? null;
 $marks = $_POST['marks'] ?? [];
@@ -44,7 +53,7 @@ try {
     $stmt->execute([$comments , $review_id]);
 
     $pdo->commit();
-    header("Location: review_paper.php?msg=Review submitted successfully");    
+    header("Location: review_paper_external.php?msg=Review submitted successfully");    
     
     
     exit;

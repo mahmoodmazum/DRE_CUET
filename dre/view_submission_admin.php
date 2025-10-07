@@ -5,7 +5,7 @@ Auth::requireLogin();
 $user = $_SESSION['user'];
 if ($user['role'] !== 'dre_admin') { http_response_code(403); exit('Access denied'); }
 
-include __DIR__ . '/../src/includes/header.php';
+include __DIR__ . '/../src/includes/custom_header.php';
 include __DIR__ . '/../src/includes/sidebar_dre.php';
 
 $id = $_GET['id'] ?? null;
@@ -21,16 +21,18 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$id]);
 $submission = $stmt->fetch();
+
 if (!$submission) { exit("Submission not found"); }
 
 // Decode JSON for costs
 $staffCosts = json_decode($submission['staff_costs'], true) ?: [];
+
 $directExpenses = json_decode($submission['direct_expenses'], true) ?: [];
+//print_r($directExpenses);
 $totalStaff = array_sum(array_column($staffCosts, 'amount'));
 $totalDirect = array_sum(array_column($directExpenses, 'amount'));
 $totalCost = $totalStaff + $totalDirect;
 
-// Fetch reviews/comments
 $stmt = $pdo->prepare("SELECT * FROM reviews WHERE submission_id = ?");
 $stmt->execute([$id]);
 $reviews = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -55,27 +57,10 @@ $externalReviewers = $pdo->query("
     WHERE user_id IS NULL AND external_name IS NOT NULL AND external_email IS NOT NULL
     ORDER BY external_name ASC
 ")->fetchAll();
-
-// Fetch submission attachments
-$stmt = $pdo->prepare("SELECT * FROM submission_attachments WHERE submission_id = ?");
-$stmt->execute([$id]);
-$attachments = $stmt->fetchAll(PDO::FETCH_ASSOC);
-$typeLabels = [
-    'appendA' => 'Appendix A',
-    'appendB' => 'Appendix B',
-    'appendC' => 'Appendix C'
-];
-$attachmentsByType = [];
-foreach ($attachments as $file) {
-    $attachmentsByType[$file['type']] = $file;
-}
 ?>
 
 <div class="content-wrapper">
-  <section class="content-header">
-    <div class="container-fluid"><h1>Submission Details</h1></div>
-  </section>
-
+  <section class="content-header"><div class="container-fluid"><h1>Submission Details</h1></div></section>
   <section class="content">
     <div class="card">
       <div class="card-body">
@@ -87,35 +72,27 @@ foreach ($attachments as $file) {
           <tbody>
             <tr><th>Project Title</th><td><?= htmlspecialchars($submission['project_title']) ?></td></tr>
             <tr><th>Status</th><td><?= htmlspecialchars($submission['status']) ?></td></tr>
-            <tr><th>Principal Investigator (PI)</th><td><?= htmlspecialchars($submission['pi']) ?></td></tr>
-            <tr><th>Co-Principal Investigator (Co-PI)</th><td><?= htmlspecialchars($submission['co_pi']) ?></td></tr>
+            <tr><th>PI</th><td><?= htmlspecialchars($submission['pi']) ?></td></tr>
+            <tr><th>Co-PI</th><td><?= htmlspecialchars($submission['co_pi']) ?></td></tr>
             <tr><th>Year</th><td><?= htmlspecialchars($submission['year']) ?></td></tr>
             <tr><th>Phase</th><td><?= htmlspecialchars($submission['phase']) ?></td></tr>
-            <tr><th>Key Words </th><td><?= htmlspecialchars($submission['keywords']) ?></td></tr>
-            <tr><th>Specific Objectives of the Project</th><td><?= nl2br(htmlspecialchars($submission['specific_objectives'])) ?></td></tr>
+            <tr><th>Keywords</th><td><?= htmlspecialchars($submission['keywords']) ?></td></tr>
+            <tr><th>Specific Objectives</th><td><?= nl2br(htmlspecialchars($submission['specific_objectives'])) ?></td></tr>
+            <tr><th>Background</th><td><?= nl2br(htmlspecialchars($submission['background'])) ?></td></tr>
             <tr><th>Project Status</th><td><?= htmlspecialchars($submission['project_status']) ?></td></tr>
-            <tr><th>Literature Review Summary</th><td><a href="/DRE/<?= htmlspecialchars($attachmentsByType['l_rev']['file_path']) ?>" target="_blank">
-                        <?= htmlspecialchars($attachmentsByType['l_rev']['original_name']) ?>
-                    </a></td></tr>
-            <tr><th>Related Research</th><td><?= htmlspecialchars($submission['related_research']) ?></td></tr>
-            <tr><th>Type of Research</th><td><?= htmlspecialchars($submission['research_type']) ?></td></tr>
-            <tr><th>Direct Customers/Beneficiaries of the Project</th><td><?= htmlspecialchars($submission['beneficiaries']) ?></td></tr>
-            <tr><th>Outputs Expected from the Project</th><td><?= htmlspecialchars($submission['outputs']) ?></td></tr>
-            <tr><th>Technology Transfer/Diffusion Approach</th><td><?= htmlspecialchars($submission['transfer']) ?></td></tr>
-            <tr><th>Organizational Outcomes Expected</th><td><?= htmlspecialchars($submission['organizational_outcomes']) ?></td></tr>
           </tbody>
         </table>
 
         <!-- Staff Costs -->
         <h5>Staff Costs</h5>
         <table class="table table-bordered table-sm">
-          <thead class="thead-dark"><tr><th>Category</th><th>Year</th><th>Amount</th></tr></thead>
+          <thead class="thead-dark"><tr><th>Name</th><th>Monthly Cost</th><th>Total Month</th></tr></thead>
           <tbody>
             <?php foreach ($staffCosts as $c): ?>
             <tr>
-              <td><?= htmlspecialchars($c['category']) ?></td>
-              <td><?= htmlspecialchars($c['year']) ?></td>
-              <td><?= number_format($c['amount'],2) ?></td>
+              <td><?= htmlspecialchars($c['name']) ?></td>
+              <td><?= htmlspecialchars($c['monthly']) ?></td>
+              <td><?= number_format($c['months'],2) ?></td>
             </tr>
             <?php endforeach; ?>
           </tbody>
@@ -127,41 +104,21 @@ foreach ($attachments as $file) {
         <!-- Direct Expenses -->
         <h5>Direct Expenses</h5>
         <table class="table table-bordered table-sm">
-          <thead class="thead-dark"><tr><th>Category</th><th>Year</th><th>Amount</th></tr></thead>
+          <thead class="thead-dark"><tr><th>Name</th><th>Amount</th></tr></thead>
           <tbody>
             <?php foreach ($directExpenses as $d): ?>
             <tr>
-              <td><?= htmlspecialchars($d['category']) ?></td>
-              <td><?= htmlspecialchars($d['year']) ?></td>
+              <td><?= htmlspecialchars($d['name']) ?></td>
               <td><?= number_format($d['amount'],2) ?></td>
             </tr>
             <?php endforeach; ?>
           </tbody>
           <tfoot>
-            <tr><th colspan="2">Total Direct Expenses</th><th><?= number_format($totalDirect,2) ?></th></tr>
+            <tr><th colspan="1">Total Direct Expenses</th><th><?= number_format($totalDirect,2) ?></th></tr>
           </tfoot>
         </table>
 
         <h5>Total Cost: <?= number_format($totalCost,2) ?></h5>
-
-        <!-- Uploaded Files -->
-        <h4>Uploaded Files</h4>
-        <ul>
-        <?php foreach ($typeLabels as $type => $label): ?>
-            <li>
-                <strong><?= $label ?>:</strong>
-                <?php if (isset($attachmentsByType[$type])): 
-                    $file = $attachmentsByType[$type]; ?>
-                    <a href="/<?= htmlspecialchars($file['file_path']) ?>" target="_blank">
-                        <?= htmlspecialchars($file['original_name']) ?>
-                    </a>
-                    <small>(uploaded at <?= htmlspecialchars($file['uploaded_at']) ?>)</small>
-                <?php else: ?>
-                    <em>Not uploaded</em>
-                <?php endif; ?>
-            </li>
-        <?php endforeach; ?>
-        </ul>
 
         <!-- Reviewer Assignment -->
         <h4 class="mt-4">Reviewer Assignment</h4>
@@ -173,6 +130,7 @@ foreach ($attachments as $file) {
             <select name="internal_reviewer_id" class="form-control">
               <option value="">-- Select Internal Reviewer --</option>
               <?php foreach ($internalReviewers as $t): ?>
+
                 <option value="<?= $t['rp_id'] ?>" <?= in_array($t['rp_id'], $assignedReviewerIds) ? 'selected' : '' ?>>
                   <?= htmlspecialchars($t['name']) ?>
                 </option>
@@ -185,16 +143,18 @@ foreach ($attachments as $file) {
             <select name="external_reviewer_id" class="form-control">
               <option value="">-- Select External Reviewer --</option>
               <?php foreach ($externalReviewers as $er): ?>
-                <option value="<?= $er['id'] ?>" <?= in_array($er['id'], $assignedReviewerIds) ? 'selected' : '' ?>>
+                <option value="<?= $er['id'] ?>" 
+                  <?= in_array($er['id'], $assignedReviewerIds) ? 'selected' : '' ?>>
                   <?= htmlspecialchars($er['external_name']) ?> (<?= htmlspecialchars($er['external_email']) ?>)
                 </option>
               <?php endforeach; ?>
             </select>
           </div>
 
+
           <div class="form-group">
             <label>Comments</label>
-            <textarea class="form-control" name="comments"><?= htmlspecialchars($comments) ?></textarea>
+            <textarea class="form-control" name="comments"><?php echo htmlspecialchars($comments); ?></textarea>
           </div>
 
           <button type="submit" class="btn btn-success">Save Assignment</button>
@@ -209,4 +169,4 @@ foreach ($attachments as $file) {
   </section>
 </div>
 
-<?php include __DIR__ . '/../src/includes/footer.php'; ?>
+<?php include __DIR__ . '/../src/includes/custom_footer.php'; ?>
