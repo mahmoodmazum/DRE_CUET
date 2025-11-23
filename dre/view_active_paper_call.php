@@ -22,6 +22,8 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$paper_call_id]);
 $submissions = $stmt->fetchAll();
+
+
 ?>
 
 <div class="content-wrapper">
@@ -43,6 +45,7 @@ $submissions = $stmt->fetchAll();
               <th>Principal Investigator (PI)</th>
               <th>Total Cost</th>
               <th>Reviewer Assignment</th>
+              <th>Reviewer Reviewed</th>
               <th>Comment</th>
               <th>Actions</th>
             </tr>
@@ -103,10 +106,13 @@ foreach ($externalReviewers as $er){
                   <span class="badge badge-secondary">None</span>
                 <?php endif; ?>
               </td>
+              
+              <td><?= htmlspecialchars($s['status']); ?></td>
               <td><?= htmlspecialchars($comments); ?></td>
               <td>
                 <a href="view_submission_admin.php?id=<?= $s['id'] ?>" class="btn btn-sm btn-info">View</a>
               </td>
+
             </tr>
             <?php endforeach; ?>
           </tbody>

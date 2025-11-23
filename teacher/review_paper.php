@@ -28,7 +28,7 @@ $stmt = $pdo->prepare("
     INNER JOIN submissions s ON r.submission_id = s.id
     LEFT JOIN users u ON s.user_id = u.id
     LEFT JOIN paper_calls pc ON s.paper_call_id = pc.id
-    WHERE r.reviewer_id = ? AND (s.status = 'submitted' OR s.status = 'reviewed') AND pc.review_deadline >= CURDATE() 
+    WHERE r.reviewer_id = ? AND pc.review_deadline >= CURDATE() 
     ORDER BY s.created_at DESC
 ");
 $stmt->execute([$reviewerPoolId]);

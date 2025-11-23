@@ -8,7 +8,14 @@ $review_id = $_POST['review_id'] ?? null;
 $marks = $_POST['marks'] ?? [];
 $comments = $_POST['comments'] ?? [];
 
+$stmt = $pdo->prepare("
+    SELECT s.*
+    FROM submissions s
+    WHERE s.id = ?
+");
 
+$stmt->execute([$submission_id]);
+$submission = $stmt->fetch();
 
 if (!$review_id || empty($marks)) exit('Invalid submission.');
 
@@ -26,8 +33,16 @@ try {
 
     //update submission table
 
+    if ($submission['status']=='submitted'){$status='Internal';}
+    elseif ($submission['status']=='External') {
+        $status='Internal-External';
+    }
+    else{
+        $status='submitted';
+    }
+
     $stmt = $pdo->prepare("UPDATE submissions SET status = ?, updated_at = NOW() WHERE id = ?");
-    $stmt->execute(['reviewed' , $submission_id]);
+    $stmt->execute([$status , $submission_id]);
 
     // Delete existing marks if any
     $stmt = $pdo->prepare("DELETE FROM review_marks WHERE review_id = ?");
@@ -40,8 +55,8 @@ try {
     }
 
     // Optionally, update reviews table comments
-    $stmt = $pdo->prepare("UPDATE reviews SET comments = ?, updated_at = NOW() WHERE id = ?");
-    $stmt->execute([$comments , $review_id]);
+    // $stmt = $pdo->prepare("UPDATE reviews SET comments = ?, updated_at = NOW() WHERE id = ?");
+    // $stmt->execute([$comments , $review_id]);
 
     $pdo->commit();
     header("Location: review_paper.php?msg=Review submitted successfully");    

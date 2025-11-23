@@ -26,8 +26,10 @@ if (!$submission) { exit("Submission not found"); }
 
 // Decode JSON for costs
 $staffCosts = json_decode($submission['staff_costs'], true) ?: [];
+$projectTeam = json_decode($submission['project_team'], true) ?: [];
 $directExpenses = json_decode($submission['direct_expenses'], true) ?: [];
 $totalStaff = array_sum(array_column($staffCosts, 'amount'));
+$totalTeam = array_sum(array_column($projectTeam, 'mm'));
 $totalDirect = array_sum(array_column($directExpenses, 'amount'));
 $totalCost = $totalStaff + $totalDirect;
 
@@ -55,6 +57,11 @@ $externalReviewers = $pdo->query("
     WHERE user_id IS NULL AND external_name IS NOT NULL AND external_email IS NOT NULL
     ORDER BY external_name ASC
 ")->fetchAll();
+
+// Fetch attached files
+$filesStmt = $pdo->prepare("SELECT * FROM submission_attachments WHERE submission_id = ?");
+$filesStmt->execute([$id]);
+$attachments = $filesStmt->fetchAll();
 ?>
 
 <div class="content-wrapper">
@@ -76,15 +83,42 @@ $externalReviewers = $pdo->query("
             <tr><th>Phase</th><td><?= htmlspecialchars($submission['phase']) ?></td></tr>
             <tr><th>Keywords</th><td><?= htmlspecialchars($submission['keywords']) ?></td></tr>
             <tr><th>Specific Objectives</th><td><?= nl2br(htmlspecialchars($submission['specific_objectives'])) ?></td></tr>
-            <tr><th>Background</th><td><?= nl2br(htmlspecialchars($submission['background'])) ?></td></tr>
             <tr><th>Project Status</th><td><?= htmlspecialchars($submission['project_status']) ?></td></tr>
+            <tr><th>Related Research</th><td><?= htmlspecialchars($submission['related_research']) ?></td></tr>
+            <tr><th>Type of Research</th><td><?= htmlspecialchars($submission['research_type']) ?></td></tr>
+            <tr><th>Direct Customers/Beneficiaries of the Project</th><td><?= htmlspecialchars($submission['beneficiaries']) ?></td></tr>
+            <tr><th>Outputs Expected from the Project</th><td><?= htmlspecialchars($submission['outputs']) ?></td></tr>
+            <tr><th>Technology Transfer/Diffusion Approach</th><td><?= htmlspecialchars($submission['transfer']) ?></td></tr>
+            <tr><th>Organizational Outcomes Expected</th><td><?= htmlspecialchars($submission['organizational_outcomes']) ?></td></tr>
+            <tr><th>National Impacts Expected</th><td><?= htmlspecialchars($submission['national_impacts']) ?></td></tr>
+            <tr><th>Outside Research Organizations/Industries Involved in the Project</th><td><?= htmlspecialchars($submission['external_org']) ?></td></tr>
           </tbody>
         </table>
+
+
+<!-- Project Team -->
+        <h5>Project Team</h5>
+        <table class="table table-bordered table-sm">
+          <thead class="thead-dark"><tr><th>Name</th><th>Organization</th><th>MM</th></tr></thead>
+          <tbody>
+            <?php foreach ($projectTeam as $c): ?>
+            <tr>
+              <td><?= htmlspecialchars($c['name']) ?></td>
+              <td><?= htmlspecialchars($c['org']) ?></td>
+              <td><?= number_format($c['mm'],2) ?></td>
+            </tr>
+            <?php endforeach; ?>
+          </tbody>
+          <tfoot>
+            <tr><th colspan="2">Total Costs</th><th><?= number_format($totalTeam,2) ?></th></tr>
+          </tfoot>
+        </table>
+
 
         <!-- Staff Costs -->
         <h5>Staff Costs</h5>
         <table class="table table-bordered table-sm">
-          <thead class="thead-dark"><tr><th>Category</th><th>Year</th><th>Amount</th></tr></thead>
+          <thead class="thead-dark"><tr><th>Category</th><th>Year</th><th>Year</th></tr></thead>
           <tbody>
             <?php foreach ($staffCosts as $c): ?>
             <tr>
@@ -119,6 +153,41 @@ $externalReviewers = $pdo->query("
 
         <h5>Total Cost: <?= number_format($totalCost,2) ?></h5>
 
+
+
+ <!-- Uploaded Files -->
+      <h4>Uploaded Files</h4>
+      <?php
+      $typeLabels = [
+          'l_rev'    => 'Literature Review',
+          'appendA'  => 'Appendix A',
+          'appendB'  => 'Appendix B',
+          'appendC'  => 'Appendix C'
+      ];
+      $attachmentsByType = [];
+      foreach ($attachments as $file) {
+          $attachmentsByType[$file['type']] = $file;
+      }
+      ?>
+      <ul>
+        <?php foreach ($typeLabels as $type => $label): ?>
+          <li>
+            <strong><?= $label ?>:</strong>
+            <?php if (isset($attachmentsByType[$type])): 
+              $file = $attachmentsByType[$type]; ?>
+              <a href="/DRE/<?= htmlspecialchars($file['file_path']) ?>" target="_blank">
+                <?= htmlspecialchars($file['original_name']) ?>
+              </a>
+              <small>(uploaded at <?= htmlspecialchars($file['uploaded_at']) ?>)</small>
+            <?php else: ?>
+              <em>Not uploaded</em>
+            <?php endif; ?>
+          </li>
+        <?php endforeach; ?>
+      </ul>
+
+
+
         <!-- Reviewer Assignment -->
         <h4 class="mt-4">Reviewer Assignment</h4>
         <form method="post" action="assign_reviewer.php">
@@ -136,6 +205,8 @@ $externalReviewers = $pdo->query("
               <?php endforeach; ?>
             </select>
           </div>
+
+
 
           <div class="form-group">
             <label>External Reviewer</label>

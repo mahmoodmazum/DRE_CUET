@@ -112,7 +112,11 @@ $attachments = $filesStmt->fetchAll();
   .btn-danger { background: #d32f2f; }
   .btn-success { background: #2e7d32; }
   .btn-secondary { background: #616161; }
+
+
 </style>
+
+
 
 <div class="content-wrapper">
   <section class="content-header">
@@ -189,7 +193,7 @@ $attachments = $filesStmt->fetchAll();
             <tr>
               <td><?= htmlspecialchars($cost['category'] ?? '') ?></td>
               <td><?= htmlspecialchars($cost['year'] ?? '') ?></td>
-              <td><?= number_format($cost['amount'] ?? 0,2) ?></td>
+              <td><?= $cost['amount'] ?></td>
             </tr>
           <?php endforeach; ?>
         </tbody>
@@ -251,7 +255,7 @@ $attachments = $filesStmt->fetchAll();
             <strong><?= $label ?>:</strong>
             <?php if (isset($attachmentsByType[$type])): 
               $file = $attachmentsByType[$type]; ?>
-              <a href="/<?= htmlspecialchars($file['file_path']) ?>" target="_blank">
+              <a href="/DRE/<?= htmlspecialchars($file['file_path']) ?>" target="_blank">
                 <?= htmlspecialchars($file['original_name']) ?>
               </a>
               <small>(uploaded at <?= htmlspecialchars($file['uploaded_at']) ?>)</small>
@@ -269,12 +273,21 @@ $attachments = $filesStmt->fetchAll();
           <a href="delete_submission.php?id=<?= $submission['id'] ?>" class="btn btn-danger"
              onclick="return confirm('Are you sure you want to delete this submission?');">Delete</a>
         <?php endif; ?>
-        <a href="#" class="btn btn-success">Print</a>
+        <a href="#" class="btn btn-success" id="printPageBtn">Print</a>
+
         <a href="dashboard.php" class="btn btn-secondary">Back</a>
       </div>
 
     </div>
   </section>
 </div>
+
+<script>
+  document.getElementById('printPageBtn').addEventListener('click', function (e) {
+    e.preventDefault();
+    window.print();
+  });
+</script>
+
 
 <?php include __DIR__ . '/../src/includes/footer.php'; ?>

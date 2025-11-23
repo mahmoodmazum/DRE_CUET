@@ -69,33 +69,33 @@ include __DIR__ . '/../src/includes/sidebar_teacher.php';
     <!-- Project Title -->
     <div class="form-group">
       <label>1. Project Title</label>
-      <small>Title should be short and concise</small>
+      <small>(Title should be short and concise)</small>
       <input type="text" name="project_title" value="<?= $editing ? htmlspecialchars($editData['project_title']) : '' ?>" required>
     </div>
 
     <!-- PI & Co-PI -->
     <div class="form-group">
       <label>2a) Principal Investigator (PI)</label>
-      <small>Name and Department/Organization</small>
+      <small>(Name and Department/Organization)</small>
       <input type="text" name="pi" value="<?= $editing ? htmlspecialchars($editData['pi']) : '' ?>">
     </div>
     <div class="form-group">
       <label>2b) Co-Principal Investigator (Co-PI)</label>
-      <small>Name and Department/Organization</small>
+      <small>(Name and Department/Organization)</small>
       <input type="text" name="co_pi" value="<?= $editing ? htmlspecialchars($editData['co_pi']) : '' ?>">
     </div>
 
     <!-- Keywords -->
     <div class="form-group">
       <label>3. Key Words</label>
-      <small>Maximum 5 key words describing the project</small>
+      <small>(Maximum 5 key words describing the project)</small>
       <input type="text" name="keywords" value="<?= $editing ? htmlspecialchars($editData['keywords']) : '' ?>">
     </div>
 
     <!-- Specific Objectives -->
     <div class="form-group">
       <label>4. Specific Objectives of the Project</label>
-      <small>Describe measurable objectives and expected results</small>
+      <small>(Describe measurable objectives and expected results)</small>
       <textarea name="specific_objectives" rows="4"><?= $editing ? htmlspecialchars($editData['specific_objectives']) : '' ?></textarea>
     </div>
 
@@ -129,12 +129,12 @@ include __DIR__ . '/../src/includes/sidebar_teacher.php';
 
     <?php
     $areas = [
-      'beneficiaries'=>'7. Direct Customers/Beneficiaries of the Project<small>Identify potential customers and their relevance</small>',
-      'outputs'=>'8. Outputs Expected from the Project<small>Provide details</small>',
-      'transfer'=>'9. Technology Transfer/Diffusion Approach<small>Describe transfer method and sustainability</small>',
-      'organizational_outcomes'=>'10. Organizational Outcomes Expected<small>Provide details</small>',
-      'national_impacts'=>'11. National Impacts Expected<small>Provide details</small>',
-      'external_org'=>'12. Outside Research Organizations/Industries Involved<small>Identify and describe their role</small>',
+      'beneficiaries'=>'7. Direct Customers/Beneficiaries of the Project<small>(Identify potential customers and their relevance)</small>',
+      'outputs'=>'8. Outputs Expected from the Project<small>(Provide details)</small>',
+      'transfer'=>'9. Technology Transfer/Diffusion Approach<small>(Describe transfer method and sustainability)</small>',
+      'organizational_outcomes'=>'10. Organizational Outcomes Expected<small>(Provide details)</small>',
+      'national_impacts'=>'11. National Impacts Expected<small>(Provide details)</small>',
+      'external_org'=>'12. Outside Research Organizations/Industries Involved<small>(Identify and describe their role)</small>',
     ];
     foreach($areas as $k=>$label):
     ?>
@@ -147,7 +147,7 @@ include __DIR__ . '/../src/includes/sidebar_teacher.php';
     <!-- Project Team -->
     <div class="form-group">
       <label>13. Project Team</label>
-      <small>Refer to Staff Cost Estimation Form in Appendix-A</small>
+      <small>(Refer to Staff Cost Estimation Form in Appendix-A)</small>
       <div id="teamRows"></div>
       <button type="button" class="btn-add" id="addTeamBtn">Add Team Member</button>
       <input type="hidden" name="project_team" id="project_team" value='<?= $editing ? htmlspecialchars($editData['project_team']) : '[]' ?>'>
@@ -156,9 +156,9 @@ include __DIR__ . '/../src/includes/sidebar_teacher.php';
     <!-- Research Methodology, Activities, Milestones -->
     <?php
     $areas2 = [
-      'methodology'=>'14. Research Methodology<small>Describe methodology, facilities, equipment</small>',
-      'activities'=>'15. Project Activities<small>List main activities and timeline</small>',
-      'milestones'=>'16. Key Milestones<small>List principal milestones with timeline</small>'
+      'methodology'=>'14. Research Methodology<small>(Describe methodology, facilities, equipment)</small>',
+      'activities'=>'15. Project Activities<small>(List main activities and timeline)</small>',
+      'milestones'=>'16. Key Milestones<small>(List principal milestones with timeline)</small>'
     ];
     foreach($areas2 as $k=>$label):
     ?>
@@ -297,28 +297,106 @@ $(function(){
   $(document).on('click','.btn-remove',function(){ team.splice($(this).data('i'),1); renderTeam(); });
 
   // --- Staff Costs ---
-  const staffInput = $('#staff_costs'); let staffCosts = JSON.parse(staffInput.val()||'[]');
-  function renderStaff(){ $('#staffCosts').html(''); staffCosts.forEach((s,i)=>{ $('#staffCosts').append(`<div style="display:flex;gap:8px;margin-bottom:8px;">
-    <input style="flex:2;padding:6px;border-radius:4px;" placeholder="Staff Name" value="${s.name||''}" data-i="${i}" data-key="name">
-    <input style="flex:1;padding:6px;border-radius:4px;" type="number" placeholder="Monthly Cost" value="${s.monthly||0}" data-i="${i}" data-key="monthly">
-    <input style="flex:0 0 80px;padding:6px;border-radius:4px;" type="number" placeholder="Months" value="${s.months||0}" data-i="${i}" data-key="months">
-    <button type="button" class="btn-remove" data-i="${i}">Remove</button>
-  </div>`); }); staffInput.val(JSON.stringify(staffCosts)); }
+  // --- Staff Costs ---
+const staffInput = $('#staff_costs');
+let staffCosts = JSON.parse(staffInput.val() || '[]');
+
+function renderStaff() {
+  $('#staffCosts').html('');
+  staffCosts.forEach((s, i) => {
+    $('#staffCosts').append(`
+      <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center;">
+        <select style="flex:1;padding:6px;border-radius:4px;" data-i="${i}" data-key="category">
+          <option value="">Select Category</option>
+          <option value="Salaried Paid" ${s.category === 'Salaried Paid' ? 'selected' : ''}>Salaried Paid</option>
+          <option value="Temporary and Contract personnel" ${s.category === 'Temporary and Contract personnel' ? 'selected' : ''}>Temporary and Contract personnel</option>
+        </select>
+        <input style="flex:2;padding:6px;border-radius:4px;" placeholder="Year" value="${s.year || ''}" data-i="${i}" data-key="year">
+
+        <input style="flex:1;padding:6px;border-radius:4px;" type="number" placeholder="Amount (৳)" value="${s.amount || 0}" data-i="${i}" data-key="amount">
+
+        <button type="button" class="btn-remove" data-i="${i}">Remove</button>
+      </div>
+    `);
+  });
+  staffInput.val(JSON.stringify(staffCosts));
+}
+
+renderStaff();
+
+$('#addStaffBtn').click(() => {
+  staffCosts.push({
+    category: '',
+    year: '',
+    amount: 0,
+  });
   renderStaff();
-  $('#addStaffBtn').click(()=>{ staffCosts.push({name:'',monthly:0,months:0}); renderStaff(); });
-  $(document).on('input','#staffCosts [data-key]',function(){ const i=$(this).data('i'),k=$(this).data('key'); staffCosts[i][k]=$(this).val(); staffInput.val(JSON.stringify(staffCosts)); });
-  $(document).on('click','#staffCosts .btn-remove',function(){ staffCosts.splice($(this).data('i'),1); renderStaff(); });
+});
+
+$(document).on('input change', '#staffCosts [data-key]', function () {
+  const i = $(this).data('i'),
+        k = $(this).data('key');
+  staffCosts[i][k] = $(this).val();
+  staffInput.val(JSON.stringify(staffCosts));
+});
+
+$(document).on('click', '#staffCosts .btn-remove', function () {
+  staffCosts.splice($(this).data('i'), 1);
+  renderStaff();
+});
 
   // --- Direct Expenses ---
-  const expenseInput = $('#direct_expenses'); let directExpenses = JSON.parse(expenseInput.val()||'[]');
-  function renderExpenses(){ $('#directExpenses').html(''); directExpenses.forEach((d,i)=>{ $('#directExpenses').append(`<div style="display:flex;gap:8px;margin-bottom:8px;">
-    <input style="flex:2;padding:6px;border-radius:4px;" placeholder="Expense Name" value="${d.name||''}" data-i="${i}" data-key="name">
-    <input style="flex:1;padding:6px;border-radius:4px;" type="number" placeholder="Amount" value="${d.amount||0}" data-i="${i}" data-key="amount">
-    <button type="button" class="btn-remove" data-i="${i}">Remove</button>
-  </div>`); }); expenseInput.val(JSON.stringify(directExpenses)); }
+const expenseInput = $('#direct_expenses');
+let directExpenses = JSON.parse(expenseInput.val() || '[]');
+
+function renderExpenses() {
+  $('#directExpenses').html('');
+  directExpenses.forEach((d, i) => {
+    $('#directExpenses').append(`
+      <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center;">
+        <select style="flex:2;padding:6px;border-radius:4px;" data-i="${i}" data-key="category">
+          <option value="">Select Expense Category</option>
+          <option value="Travel and Transportation" ${d.category === 'Travel and Transportation' ? 'selected' : ''}>Travel and Transportation</option>
+          <option value="Rentals" ${d.category === 'Rentals' ? 'selected' : ''}>Rentals</option>
+          <option value="Research Materials and Supplies" ${d.category === 'Research Materials and Supplies' ? 'selected' : ''}>Research Materials and Supplies</option>
+          <option value="Minor Modifications and Repairs" ${d.category === 'Minor Modifications and Repairs' ? 'selected' : ''}>Minor Modifications and Repairs</option>
+          <option value="Special Services" ${d.category === 'Special Services' ? 'selected' : ''}>Special Services</option>
+          <option value="Special Equipment and Accessories" ${d.category === 'Special Equipment and Accessories' ? 'selected' : ''}>Special Equipment and Accessories</option>
+        </select>
+
+        <input style="flex:2;padding:6px;border-radius:4px;" placeholder="year" value="${d.year || ''}" data-i="${i}" data-key="year">
+
+        <input style="flex:1;padding:6px;border-radius:4px;" type="number" placeholder="Amount (৳)" value="${d.amount || 0}" data-i="${i}" data-key="amount">
+
+        <button type="button" class="btn-remove" data-i="${i}">Remove</button>
+      </div>
+    `);
+  });
+  expenseInput.val(JSON.stringify(directExpenses));
+}
+
+renderExpenses();
+
+$('#addExpenseBtn').click(() => {
+  directExpenses.push({
+    category: '',
+    year: '',
+    amount: 0
+  });
   renderExpenses();
-  $('#addExpenseBtn').click(()=>{ directExpenses.push({name:'',amount:0}); renderExpenses(); });
-  $(document).on('input','#directExpenses [data-key]',function(){ const i=$(this).data('i'),k=$(this).data('key'); directExpenses[i][k]=$(this).val(); expenseInput.val(JSON.stringify(directExpenses)); });
-  $(document).on('click','#directExpenses .btn-remove',function(){ directExpenses.splice($(this).data('i'),1); renderExpenses(); });
+});
+
+$(document).on('input change', '#directExpenses [data-key]', function () {
+  const i = $(this).data('i'),
+        k = $(this).data('key');
+  directExpenses[i][k] = $(this).val();
+  expenseInput.val(JSON.stringify(directExpenses));
+});
+
+$(document).on('click', '#directExpenses .btn-remove', function () {
+  directExpenses.splice($(this).data('i'), 1);
+  renderExpenses();
+});
+
 });
 </script>
