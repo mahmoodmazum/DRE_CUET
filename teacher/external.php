@@ -41,6 +41,6 @@ $payload = json_encode([
 $token = base64_encode($payload) . '.' . hash_hmac('sha256', $payload, $secret);
 
 // Generate link
-$link = "http://localhost:8081/DRE/teacher/review_paper_external.php?token=" . urlencode($token);
+$link = "https://webapps.cuet.ac.bd/DRE/teacher/review_paper_external.php?token=" . urlencode($token);
 
 echo "Direct link for reviewer: <a href='$link'>$link</a>";

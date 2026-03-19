@@ -16,7 +16,7 @@ $submission_id=$_POST['submission_id'] ?? null;
 $review_id = $_POST['review_id'] ?? null;
 $marks = $_POST['marks'] ?? [];
 $comments = $_POST['comments'] ?? [];
-
+$finalComment = $_POST['final_comment'];
 
 $stmt = $pdo->prepare("
     SELECT s.*
@@ -64,9 +64,9 @@ try {
     $stmt->execute([$review_id]);
 
     // Insert new marks
-    $stmt = $pdo->prepare("INSERT INTO review_marks (review_id, criterion_index, evaluated_marks, comment) VALUES (?, ?, ?, ?)");
+    $stmt = $pdo->prepare("INSERT INTO review_marks (review_id, criterion_index, evaluated_marks, comment,final_comment) VALUES (?, ?, ?, ?, ?)");
     foreach ($marks as $idx => $mark) {
-        $stmt->execute([$review_id, $idx, $mark, $comments[$idx]]);
+        $stmt->execute([$review_id, $idx, $mark,$comments[$idx], $finalComment]);
     }
 
     // // Optionally, update reviews table comments

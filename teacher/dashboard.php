@@ -8,142 +8,134 @@ if ($user['role'] !== 'teacher') { http_response_code(403); exit('Access denied'
 include __DIR__ . '/../src/includes/header.php';
 include __DIR__ . '/../src/includes/sidebar_teacher.php';
 
-// show active paper call if exists
 $call = $pdo->query("SELECT * FROM paper_calls WHERE deadline_date >= CURDATE() ORDER BY issue_date DESC LIMIT 1")->fetch();
-$submissions = $pdo->prepare("SELECT * FROM submissions WHERE user_id = ? ORDER BY created_at DESC");
+
+$submissions = $pdo->prepare("SELECT s.*, d.name AS dept FROM submissions s LEFT JOIN departments d ON s.department_id=d.id WHERE s.user_id = ? ORDER BY s.created_at DESC");
 $submissions->execute([$user['sub'] ?? $user['id']]);
 $subs = $submissions->fetchAll();
+
+$statusColors = [
+    'submitted'       => 'badge-primary',
+    'Internal'        => 'badge-warning',
+    'External'        => 'badge-secondary',
+    'Internal-External' => 'badge-success',
+];
 ?>
 
-<!-- Material UI + Roboto + Icons -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+<div class="main-content">
+  <div class="page-header">
+    <h1>Dashboard</h1>
+    <div class="breadcrumb">Welcome, <?= htmlspecialchars($user['name']) ?></div>
+  </div>
 
-<style>
-  body {
-    font-family: 'Roboto', sans-serif;
-    background: #f5f5f5;
-  }
-  .content-wrapper {
-    padding: 24px;
-  }
+  <div class="page-body">
 
-  /* Alerts */
-  .mui-alert {
-    padding: 16px;
-    border-radius: 8px;
-    margin-bottom: 24px;
-    color: white;
-  }
+    <?php if (!empty($_GET['submitted'])): ?>
+      <div class="alert alert-success">
+        <span class="material-icons-round">check_circle</span>
+        <span>Your proposal has been submitted successfully.</span>
+      </div>
+    <?php elseif (!empty($_GET['updated'])): ?>
+      <div class="alert alert-success">
+        <span class="material-icons-round">check_circle</span>
+        <span>Your proposal has been updated successfully.</span>
+      </div>
+    <?php endif; ?>
 
-  /* Table Styling */
-  .mui-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: #fff;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  }
-  .mui-table thead {
-    background: #1976d2;
-    color: white;
-  }
-  .mui-table th, .mui-table td {
-    padding: 12px 16px;
-    text-align: left;
-    font-size: 0.95rem;
-  }
-  .mui-table tbody tr:hover {
-    background: rgba(25, 118, 210, 0.08);
-  }
-
-  /* 8-color alternating palette */
-  .row-colored:nth-child(8n+1) { background: #e3f2fd; }
-  .row-colored:nth-child(8n+2) { background: #e8f5e9; }
-  .row-colored:nth-child(8n+3) { background: #fff3e0; }
-  .row-colored:nth-child(8n+4) { background: #f3e5f5; }
-  .row-colored:nth-child(8n+5) { background: #ede7f6; }
-  .row-colored:nth-child(8n+6) { background: #fce4ec; }
-  .row-colored:nth-child(8n+7) { background: #e0f7fa; }
-  .row-colored:nth-child(8n+8) { background: #f1f8e9; }
-
-  /* Buttons */
-  .mui-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    background: #1976d2;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 6px 12px;
-    text-decoration: none;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  .mui-btn:hover { opacity: 0.9; }
-</style>
-
-<div class="content-wrapper">
-  <?php if ($call): ?>
-    <div class="mui-alert" style="background:#0288d1;">
-      <strong>Active Paper Call</strong><br>
-      Issue: <?= htmlspecialchars($call['issue_date']) ?> — Deadline: <?= htmlspecialchars($call['deadline_date']) ?><br>
-      <?= nl2br(htmlspecialchars(substr($call['message'],0,300))) ?>
-      <div style="margin-top:10px;">
-        <a href="/DRE/teacher/submit_paper.php" class="mui-btn" style="background:#2e7d32;">
-          <span class="material-icons" style="font-size:16px;">upload</span> Submit Paper
+    <?php if ($call): ?>
+      <div class="alert alert-info" style="align-items:flex-start;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;gap:10px;font-weight:600;">
+          <span class="material-icons-round">campaign</span>
+          Active Call For Proposal
+        </div>
+        <div style="font-size:0.88rem;line-height:1.6;">
+          <strong>Issue Date:</strong> <?= htmlspecialchars($call['issue_date']) ?> &nbsp;|&nbsp;
+          <strong>Submission Deadline:</strong> <?= htmlspecialchars($call['deadline_date']) ?>
+          <?php if ($call['review_deadline']): ?>
+            &nbsp;|&nbsp; <strong>Review Deadline:</strong> <?= htmlspecialchars($call['review_deadline']) ?>
+          <?php endif; ?>
+        </div>
+        <?php if ($call['message']): ?>
+          <div style="font-size:0.85rem;color:var(--c-primary-dark);opacity:.9;">
+            <?= nl2br(htmlspecialchars(substr($call['message'],0,300))) ?>
+          </div>
+        <?php endif; ?>
+        <a href="/DRE/teacher/submit_paper.php" class="btn btn-primary">
+          <span class="material-icons-round">upload_file</span> Submit Proposal
         </a>
       </div>
-    </div>
-  <?php else: ?>
-    <div class="mui-alert" style="background:#f57c00;">
-      No active paper call currently.
-    </div>
-  <?php endif; ?>
+    <?php else: ?>
+      <div class="alert alert-warning">
+        <span class="material-icons-round">info</span>
+        <span>There is no active Call For Proposal at this time.</span>
+      </div>
+    <?php endif; ?>
 
-  <h3 style="margin-bottom:16px;">Your Submissions</h3>
+    <div class="card">
+      <div class="card-header">
+        <h3>Your Submitted Proposals</h3>
+        <?php if ($call): ?>
+          <a href="/DRE/teacher/submit_paper.php" class="btn btn-primary btn-sm">
+            <span class="material-icons-round">add</span> New Proposal
+          </a>
+        <?php endif; ?>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <?php if (empty($subs)): ?>
+          <div style="padding:40px;text-align:center;color:var(--c-text-muted);">
+            <span class="material-icons-round" style="font-size:40px;opacity:.3;">description</span>
+            <p style="margin-top:8px;">No proposals submitted yet.</p>
+          </div>
+        <?php else: ?>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Project Title</th>
+                  <th>PI</th>
+                  <th>Department</th>
+                  <th>Project Status</th>
+                  <th>Submission Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php foreach($subs as $s): ?>
+                  <tr>
+                    <td><?= $s['id'] ?></td>
+                    <td><?= htmlspecialchars($s['project_title'] ?? '—') ?></td>
+                    <td style="font-size:0.82rem;"><?= htmlspecialchars($s['pi'] ?? '—') ?></td>
+                    <td style="font-size:0.82rem;"><?= htmlspecialchars($s['dept'] ?? '—') ?></td>
+                    <td><span class="badge badge-secondary"><?= htmlspecialchars($s['project_status'] ?? '—') ?></span></td>
+                    <td><span class="badge <?= $statusColors[$s['status']] ?? 'badge-secondary' ?>"><?= htmlspecialchars($s['status'] ?? '—') ?></span></td>
+                    <td>
+                      <div class="btn-group">
+                        <a href="/DRE/teacher/view_submission.php?id=<?= $s['id'] ?>" class="btn btn-primary btn-sm">
+                          <span class="material-icons-round">visibility</span> View
+                        </a>
+                        <?php if ($call && $s['paper_call_id'] == $call['id']): ?>
+                          <a href="/DRE/teacher/submit_paper.php?edit=<?= $s['id'] ?>" class="btn btn-outline btn-sm">
+                            <span class="material-icons-round">edit</span> Edit
+                          </a>
+                          <a href="/DRE/teacher/delete_submission.php?id=<?= $s['id'] ?>"
+                             class="btn btn-danger btn-sm"
+                             onclick="return confirm('Delete this proposal?')">
+                            <span class="material-icons-round">delete</span>
+                          </a>
+                        <?php endif; ?>
+                      </div>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+        <?php endif; ?>
+      </div>
+    </div>
 
-  <table class="mui-table">
-    <thead>
-      <tr>
-        <th style="width:60px;">ID</th>
-        <th>Title</th>
-        <th>PI</th>
-        <th>Project Status</th>
-        <th>Start Date</th>
-        <th>Duration (Months)</th>
-        <th style="width:120px;">Status</th>
-        <th style="width:160px;">Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <?php foreach($subs as $s): ?>
-        <tr class="row-colored">
-          <td><?= $s['id'] ?></td>
-          <td><?= htmlspecialchars($s['project_title']) ?></td>
-          <td><?= htmlspecialchars($s['pi']) ?></td>
-          <td><?= htmlspecialchars($s['project_status']) ?></td>
-          <td><?= htmlspecialchars($s['start_date']) ?></td>
-          <td><?= htmlspecialchars($s['duration_months']) ?></td>
-          
-          <td><?= htmlspecialchars($s['status']) ?></td>
-          <td>
-            <?php if ($s['status'] === 'draft'): ?>
-              <a href="/DRE/teacher/submit_paper.php?edit=<?= $s['id'] ?>" class="mui-btn">
-                <span class="material-icons" style="font-size:16px;">edit</span> Edit
-              </a>
-            <?php endif; ?>
-            <a href="/DRE/teacher/view_submission.php?id=<?= $s['id'] ?>" class="mui-btn" style="background:#7b1fa2;">
-              <span class="material-icons" style="font-size:16px;">visibility</span> View
-            </a>
-          </td>
-        </tr>
-      <?php endforeach; ?>
-    </tbody>
-  </table>
+  </div>
 </div>
 
 <?php include __DIR__ . '/../src/includes/footer.php'; ?>

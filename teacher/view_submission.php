@@ -8,10 +8,9 @@ if ($user['role'] !== 'teacher') { http_response_code(403); exit('Access denied'
 include __DIR__ . '/../src/includes/header.php';
 include __DIR__ . '/../src/includes/sidebar_teacher.php';
 
-$id = $_GET['id'] ?? null;
+$id = intval($_GET['id'] ?? 0);
 if (!$id) { exit('Submission ID missing'); }
 
-// Fetch submission
 $stmt = $pdo->prepare("
     SELECT s.*, pc.deadline_date, d.name AS department_name
     FROM submissions s
@@ -20,274 +19,265 @@ $stmt = $pdo->prepare("
     WHERE s.id = ? AND s.user_id = ?
 ");
 $stmt->execute([$id, $user['sub'] ?? $user['id']]);
-$submission = $stmt->fetch();
+$sub = $stmt->fetch();
+if (!$sub) { exit('Submission not found'); }
 
-if (!$submission) { exit("Submission not found"); }
+$canEdit = ($sub['deadline_date'] >= date('Y-m-d'));
 
-$canEditDelete = ($submission['deadline_date'] >= date('Y-m-d'));
+// Decode JSON
+$staffCosts    = json_decode($sub['staff_costs'],    true) ?: [];
+$directExpenses = json_decode($sub['direct_expenses'], true) ?: [];
+$projectTeam   = json_decode($sub['project_team'],   true) ?: [];
 
-// Decode JSON for costs
-$staffCosts = json_decode($submission['staff_costs'], true) ?: [];
-$directExpenses = json_decode($submission['direct_expenses'], true) ?: [];
-$totalStaff = array_sum(array_column($staffCosts, 'amount'));
-$totalDirect = array_sum(array_column($directExpenses, 'amount'));
-$totalCost = $totalStaff + $totalDirect;
+// Total helpers — support both old (amount) and new (year1/year2/year3) structures
+function rowTotal($r){ return (float)($r['year1']??$r['amount']??0)+(float)($r['year2']??0)+(float)($r['year3']??0); }
+$totalStaff  = array_sum(array_map('rowTotal', $staffCosts));
+$totalDirect = array_sum(array_map('rowTotal', $directExpenses));
+$totalCost   = $totalStaff + $totalDirect;
 
-// Fetch attached files
-$filesStmt = $pdo->prepare("SELECT * FROM submission_attachments WHERE submission_id = ?");
-$filesStmt->execute([$id]);
-$attachments = $filesStmt->fetchAll();
+// Attachments
+$attStmt = $pdo->prepare("SELECT * FROM submission_attachments WHERE submission_id = ?");
+$attStmt->execute([$id]);
+$atts = [];
+foreach ($attStmt->fetchAll() as $a) { $atts[$a['type']] = $a; }
+
+function fmtMoney($v){ return '৳ '.number_format((float)$v, 2); }
+function ev($v){ return htmlspecialchars($v ?? 'N/A'); }
 ?>
 
-<!-- Material UI + Roboto -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
-<script src="https://unpkg.com/@mui/material@5.15.14/umd/material-ui.development.js"></script>
+<div class="main-content">
+  <div class="page-header">
+    <h1>Proposal Details</h1>
+    <div class="breadcrumb">Dashboard / Proposal #<?= $id ?></div>
+  </div>
 
-<style>
-  body {
-    font-family: 'Roboto', sans-serif;
-    background: #f5f5f5;
-  }
-  .content-wrapper {
-    padding: 24px;
-  }
-  .card {
-    background: #fff;
-    border-radius: 12px;
-    padding: 24px;
-    margin-bottom: 24px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  }
-  h1, h4 {
-    margin-bottom: 16px;
-    font-weight: 500;
-  }
-  .mui-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 24px;
-    background: #fff;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  }
-  .mui-table th {
-    background: #1976d2;
-    color: white;
-    padding: 12px;
-    text-align: left;
-    font-weight: 500;
-  }
-  .mui-table td {
-    padding: 12px;
-    border-bottom: 1px solid #eee;
-    vertical-align: top;
-  }
-  .mui-table tbody tr:hover {
-    background: rgba(25, 118, 210, 0.08);
-  }
-  /* 8-color palette for alternating rows */
-  .row-colored:nth-child(8n+1) { background: #e3f2fd; }
-  .row-colored:nth-child(8n+2) { background: #e8f5e9; }
-  .row-colored:nth-child(8n+3) { background: #fff3e0; }
-  .row-colored:nth-child(8n+4) { background: #f3e5f5; }
-  .row-colored:nth-child(8n+5) { background: #ede7f6; }
-  .row-colored:nth-child(8n+6) { background: #fce4ec; }
-  .row-colored:nth-child(8n+7) { background: #e0f7fa; }
-  .row-colored:nth-child(8n+8) { background: #f1f8e9; }
-  .btn {
-    display: inline-block;
-    font-size: 0.9rem;
-    font-weight: 500;
-    padding: 6px 14px;
-    border-radius: 6px;
-    text-decoration: none;
-    margin-right: 6px;
-    color: white;
-    transition: opacity 0.2s;
-  }
-  .btn:hover { opacity: 0.9; }
-  .btn-primary { background: #1976d2; }
-  .btn-danger { background: #d32f2f; }
-  .btn-success { background: #2e7d32; }
-  .btn-secondary { background: #616161; }
+  <div class="page-body">
 
-
-</style>
-
-
-
-<div class="content-wrapper">
-  <section class="content-header">
-    <h1>Submission Details</h1>
-  </section>
-
-  <section class="content">
-    <div class="card">
-
-      <!-- Submission details -->
-      <table class="mui-table">
-        <tbody>
-          <tr class="row-colored"><th style="width:30%;">Project Title</th><td><?= htmlspecialchars($submission['project_title']) ?></td></tr>
-          <tr class="row-colored"><th>Status</th><td><?= htmlspecialchars($submission['status']) ?></td></tr>
-          <tr class="row-colored"><th>Department</th><td><?= htmlspecialchars($submission['department_name'] ?? 'N/A') ?></td></tr>
-          <tr class="row-colored"><th>Year</th><td><?= htmlspecialchars($submission['year'] ?? 'N/A') ?></td></tr>
-          <tr class="row-colored"><th>Phase</th><td><?= htmlspecialchars($submission['phase'] ?? 'N/A') ?></td></tr>
-          <tr class="row-colored"><th>Principal Investigator (PI)</th><td><?= htmlspecialchars($submission['pi'] ?? 'N/A') ?></td></tr>
-          <tr class="row-colored"><th>Co-Principal Investigator (Co-PI)</th><td><?= htmlspecialchars($submission['co_pi'] ?? 'N/A') ?></td></tr>
-          <tr class="row-colored"><th>Keywords</th><td><?= htmlspecialchars($submission['keywords'] ?? 'N/A') ?></td></tr>
-          <tr class="row-colored"><th>Specific Objectives</th><td><?= nl2br(htmlspecialchars($submission['specific_objectives'] ?? 'N/A')) ?></td></tr>
-          <tr class="row-colored"><th>Research Background</th><td><?= nl2br(htmlspecialchars($submission['background'] ?? 'N/A')) ?></td></tr>
-          <tr class="row-colored"><th>Project Status</th><td><?= htmlspecialchars($submission['project_status'] ?? 'N/A') ?></td></tr>
-          <tr class="row-colored"><th>Literature Review</th><td><?= nl2br(htmlspecialchars($submission['literature_review'] ?? 'N/A')) ?></td></tr>
-          <tr class="row-colored"><th>Related Research</th><td><?= nl2br(htmlspecialchars($submission['related_research'] ?? 'N/A')) ?></td></tr>
-          <tr class="row-colored"><th>Research Type</th><td><?= htmlspecialchars($submission['research_type'] ?? 'N/A') ?></td></tr>
-          <tr class="row-colored"><th>Beneficiaries</th><td><?= nl2br(htmlspecialchars($submission['beneficiaries'] ?? 'N/A')) ?></td></tr>
-          <tr class="row-colored"><th>Outputs Expected</th><td><?= nl2br(htmlspecialchars($submission['outputs'] ?? 'N/A')) ?></td></tr>
-          <tr class="row-colored"><th>Technology Transfer</th><td><?= nl2br(htmlspecialchars($submission['transfer'] ?? 'N/A')) ?></td></tr>
-          <tr class="row-colored"><th>Organizational Outcomes</th><td><?= nl2br(htmlspecialchars($submission['organizational_outcomes'] ?? 'N/A')) ?></td></tr>
-          <tr class="row-colored"><th>National Impacts</th><td><?= nl2br(htmlspecialchars($submission['national_impacts'] ?? 'N/A')) ?></td></tr>
-          <tr class="row-colored"><th>External Organizations</th><td><?= nl2br(htmlspecialchars($submission['external_org'] ?? 'N/A')) ?></td></tr>
-          <tr class="row-colored">
-            <th>Project Team</th>
-            <td>
-              <?php 
-                $team = json_decode($submission['project_team'], true);
-                if ($team && is_array($team) && count($team) > 0): ?>
-                  <table class="mui-table">
-                    <thead>
-                      <tr><th>Name</th><th>Organization</th><th>Man-Months</th></tr>
-                    </thead>
-                    <tbody>
-                      <?php foreach ($team as $member): ?>
-                        <tr>
-                          <td><?= htmlspecialchars($member['name'] ?? '') ?></td>
-                          <td><?= htmlspecialchars($member['org'] ?? '') ?></td>
-                          <td><?= htmlspecialchars($member['mm'] ?? '') ?></td>
-                        </tr>
-                      <?php endforeach; ?>
-                    </tbody>
-                  </table>
-                <?php else: ?>
-                  N/A
-              <?php endif; ?>
-            </td>
-          </tr>
-          <tr class="row-colored"><th>Research Methodology</th><td><?= nl2br(htmlspecialchars($submission['methodology'] ?? 'N/A')) ?></td></tr>
-          <tr class="row-colored"><th>Project Activities</th><td><?= nl2br(htmlspecialchars($submission['activities'] ?? 'N/A')) ?></td></tr>
-          <tr class="row-colored"><th>Key Milestones</th><td><?= nl2br(htmlspecialchars($submission['milestones'] ?? 'N/A')) ?></td></tr>
-          <tr class="row-colored"><th>Start Date</th><td><?= htmlspecialchars($submission['start_date'] ?? 'N/A') ?></td></tr>
-          <tr class="row-colored"><th>Duration (Months)</th><td><?= htmlspecialchars($submission['duration_months'] ?? 'N/A') ?></td></tr>
-        </tbody>
-      </table>
-
-      <!-- Staff Costs -->
-      <h4>Staff Costs</h4>
-      <table class="mui-table">
-        <thead>
-          <tr><th>Category</th><th>Year</th><th>Amount</th></tr>
-        </thead>
-        <tbody>
-          <?php foreach ($staffCosts as $cost): ?>
-            <tr>
-              <td><?= htmlspecialchars($cost['category'] ?? '') ?></td>
-              <td><?= htmlspecialchars($cost['year'] ?? '') ?></td>
-              <td><?= $cost['amount'] ?></td>
-            </tr>
-          <?php endforeach; ?>
-        </tbody>
-        <tfoot>
-          <tr><th colspan="2">Total Staff Costs</th><th><?= number_format($totalStaff,2) ?></th></tr>
-        </tfoot>
-      </table>
-
-      <!-- Direct Expenses -->
-      <h4>Direct Expenses</h4>
-      <table class="mui-table">
-        <thead>
-          <tr><th>Category</th><th>Year</th><th>Amount</th></tr>
-        </thead>
-        <tbody>
-          <?php foreach ($directExpenses as $exp): ?>
-            <tr>
-              <td><?= htmlspecialchars($exp['category'] ?? '') ?></td>
-              <td><?= htmlspecialchars($exp['year'] ?? '') ?></td>
-              <td><?= number_format($exp['amount'] ?? 0,2) ?></td>
-            </tr>
-          <?php endforeach; ?>
-        </tbody>
-        <tfoot>
-          <tr><th colspan="2">Total Direct Expenses</th><th><?= number_format($totalDirect,2) ?></th></tr>
-        </tfoot>
-      </table>
-
-      <h4>Total Cost: <?= number_format($totalCost,2) ?></h4>
-
-      <!-- Other Details -->
-      <h4>Other Details</h4>
-      <table class="mui-table">
-        <tbody>
-          <tr class="row-colored"><th>Other Grants</th><td><?= nl2br(htmlspecialchars($submission['other_grants'] ?? 'N/A')) ?></td></tr>
-          <tr class="row-colored"><th>Contractual Obligations</th><td><?= nl2br(htmlspecialchars($submission['contractual_obligations'] ?? 'N/A')) ?></td></tr>
-          <tr class="row-colored"><th>IP Ownership</th><td><?= nl2br(htmlspecialchars($submission['ip_ownership'] ?? 'N/A')) ?></td></tr>
-          <tr class="row-colored"><th>Acknowledgement</th><td><?= $submission['acknowledgement'] ? 'Yes' : 'No' ?></td></tr>
-        </tbody>
-      </table>
-
-      <!-- Uploaded Files -->
-      <h4>Uploaded Files</h4>
-      <?php
-      $typeLabels = [
-          'l_rev'    => 'Literature Review',
-          'appendA'  => 'Appendix A',
-          'appendB'  => 'Appendix B',
-          'appendC'  => 'Appendix C'
-      ];
-      $attachmentsByType = [];
-      foreach ($attachments as $file) {
-          $attachmentsByType[$file['type']] = $file;
-      }
-      ?>
-      <ul>
-        <?php foreach ($typeLabels as $type => $label): ?>
-          <li>
-            <strong><?= $label ?>:</strong>
-            <?php if (isset($attachmentsByType[$type])): 
-              $file = $attachmentsByType[$type]; ?>
-              <a href="/DRE/<?= htmlspecialchars($file['file_path']) ?>" target="_blank">
-                <?= htmlspecialchars($file['original_name']) ?>
-              </a>
-              <small>(uploaded at <?= htmlspecialchars($file['uploaded_at']) ?>)</small>
-            <?php else: ?>
-              <em>Not uploaded</em>
-            <?php endif; ?>
-          </li>
-        <?php endforeach; ?>
-      </ul>
-
-      <!-- Actions -->
-      <div class="mt-3">
-        <?php if ($canEditDelete): ?>
-          <a href="submit_paper.php?edit=<?= $submission['id'] ?>" class="btn btn-primary">Edit</a>
-          <a href="delete_submission.php?id=<?= $submission['id'] ?>" class="btn btn-danger"
-             onclick="return confirm('Are you sure you want to delete this submission?');">Delete</a>
-        <?php endif; ?>
-        <a href="#" class="btn btn-success" id="printPageBtn">Print</a>
-
-        <a href="dashboard.php" class="btn btn-secondary">Back</a>
-      </div>
-
+    <!-- Actions -->
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+      <?php if ($canEdit): ?>
+        <a href="submit_paper.php?edit=<?= $id ?>" class="btn btn-primary">
+          <span class="material-icons-round">edit</span> Edit Proposal
+        </a>
+        <a href="delete_submission.php?id=<?= $id ?>" class="btn btn-danger"
+           onclick="return confirm('Delete this proposal?')">
+          <span class="material-icons-round">delete</span> Delete
+        </a>
+      <?php endif; ?>
+      <button onclick="window.print()" class="btn btn-success">
+        <span class="material-icons-round">print</span> Print
+      </button>
+      <a href="dashboard.php" class="btn btn-secondary">
+        <span class="material-icons-round">arrow_back</span> Back
+      </a>
     </div>
-  </section>
+
+    <!-- Status Banner -->
+    <div class="alert alert-info" style="margin-bottom:16px;">
+      <span class="material-icons-round">info</span>
+      <div>
+        <strong>Submission Status:</strong> <?= ev($sub['status']) ?> &nbsp;|&nbsp;
+        <strong>Submitted:</strong> <?= ev($sub['created_at']) ?>
+      </div>
+    </div>
+
+    <!-- Basic Info -->
+    <div class="card">
+      <div class="card-header"><h3>Proposal Overview</h3></div>
+      <div class="card-body" style="padding:0;">
+        <table class="info-table">
+          <tr><th>Project Title</th><td><strong><?= ev($sub['project_title']) ?></strong></td></tr>
+          <tr><th>Department</th><td><?= ev($sub['department_name']) ?></td></tr>
+          <tr><th>Year / Phase</th><td><?= ev($sub['year']) ?> / <?= ev($sub['phase']) ?></td></tr>
+          <tr><th>Principal Investigator (PI)</th><td><?= ev($sub['pi']) ?></td></tr>
+          <tr><th>Co-Principal Investigator (Co-PI)</th><td><?= ev($sub['co_pi']) ?></td></tr>
+          <tr><th>Keywords</th><td><?= ev($sub['keywords']) ?></td></tr>
+          <tr><th>Project Status</th><td><?= ev($sub['project_status']) ?></td></tr>
+          <tr><th>Type of Research</th><td><?= ev($sub['research_type']) ?></td></tr>
+          <tr><th>Start Date</th><td><?= ev($sub['start_date']) ?></td></tr>
+          <tr><th>Duration (Months)</th><td><?= ev($sub['duration_months']) ?></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Detailed Sections -->
+    <div class="card">
+      <div class="card-header"><h3>Proposal Content</h3></div>
+      <div class="card-body" style="padding:0;">
+        <table class="info-table">
+          <tr><th>4. Specific Objectives</th><td><?= nl2br(ev($sub['specific_objectives'])) ?></td></tr>
+          <tr><th>5b. Project Summary</th><td><?= nl2br(ev($sub['literature_review_text'])) ?></td></tr>
+          <tr><th>5c. Literature Review &amp; Related Research</th>
+              <td>
+                <?php if (isset($atts['l_rev'])): ?>
+                  <a href="/DRE/<?= htmlspecialchars($atts['l_rev']['file_path']) ?>" target="_blank" class="btn btn-outline btn-sm">
+                    <span class="material-icons-round">download</span> <?= ev($atts['l_rev']['original_name']) ?>
+                  </a>
+                <?php else: echo '<em class="text-muted">Not uploaded</em>'; endif; ?>
+              </td>
+          </tr>
+          <tr><th>7. Beneficiaries</th><td><?= nl2br(ev($sub['beneficiaries'])) ?></td></tr>
+          <tr><th>8. Expected Outcomes</th><td><?= nl2br(ev($sub['outputs'])) ?></td></tr>
+          <tr><th>9. Technology Transfer</th><td><?= nl2br(ev($sub['transfer'])) ?></td></tr>
+          <tr><th>10. Organizational Expected Outcomes</th><td><?= nl2br(ev($sub['organizational_outcomes'])) ?></td></tr>
+          <tr><th>11. National Impacts</th><td><?= nl2br(ev($sub['national_impacts'])) ?></td></tr>
+          <tr><th>12. External Organizations</th><td><?= nl2br(ev($sub['external_org'])) ?></td></tr>
+          <tr><th>14. Research Methodology</th>
+              <td>
+                <?php if (isset($atts['methodology'])): ?>
+                  <a href="/DRE/<?= htmlspecialchars($atts['methodology']['file_path']) ?>" target="_blank" class="btn btn-outline btn-sm">
+                    <span class="material-icons-round">download</span> <?= ev($atts['methodology']['original_name']) ?>
+                  </a>
+                <?php else: echo '<em class="text-muted">Not uploaded</em>'; endif; ?>
+              </td>
+          </tr>
+          <tr><th>15. Project Activities</th><td><?= nl2br(ev($sub['activities'])) ?></td></tr>
+          <tr><th>16. Key Milestones</th><td><?= nl2br(ev($sub['milestones'])) ?></td></tr>
+          <tr><th>21. Other Grants</th><td><?= nl2br(ev($sub['other_grants'])) ?></td></tr>
+          <tr><th>22. Contractual Obligations</th><td><?= nl2br(ev($sub['contractual_obligations'])) ?></td></tr>
+          <tr><th>23. IP Ownership</th><td><?= nl2br(ev($sub['ip_ownership'])) ?></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Project Team -->
+    <?php if ($projectTeam): ?>
+    <div class="card">
+      <div class="card-header"><h3>13. Project Team</h3></div>
+      <div class="card-body" style="padding:0;">
+        <table class="data-table">
+          <thead>
+            <tr><th>Type</th><th>Name</th><th>Count</th><th>Organization</th><th>Man-Month</th></tr>
+          </thead>
+          <tbody>
+            <?php foreach($projectTeam as $m): ?>
+            <tr>
+              <td><?= htmlspecialchars($m['type'] ?? '—') ?></td>
+              <td><?= htmlspecialchars($m['name'] ?? '—') ?></td>
+              <td><?= htmlspecialchars($m['count'] ?? 1) ?></td>
+              <td><?= htmlspecialchars($m['org'] ?? '—') ?></td>
+              <td><?= htmlspecialchars($m['mm'] ?? '—') ?></td>
+            </tr>
+            <?php endforeach; ?>
+          </tbody>
+          <tfoot>
+            <tr><td colspan="4"><strong>Total Man-Month</strong></td>
+                <td><strong><?= array_sum(array_column($projectTeam,'mm')) ?></strong></td></tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Staff Costs -->
+    <div class="card">
+      <div class="card-header"><h3>18. Additional Staff Costs</h3></div>
+      <div class="card-body" style="padding:0;">
+        <?php if ($staffCosts): ?>
+        <table class="data-table">
+          <thead><tr><th>Staff Category</th><th>Year 1 (৳)</th><th>Year 2 (৳)</th><th>Year 3 (৳)</th><th>Row Total</th></tr></thead>
+          <tbody>
+            <?php foreach($staffCosts as $c): $rt = rowTotal($c); ?>
+            <tr>
+              <td><?= htmlspecialchars($c['category'] ?? '') ?></td>
+              <td><?= number_format((float)($c['year1']??$c['amount']??0),2) ?></td>
+              <td><?= number_format((float)($c['year2']??0),2) ?></td>
+              <td><?= number_format((float)($c['year3']??0),2) ?></td>
+              <td><strong><?= number_format($rt,2) ?></strong></td>
+            </tr>
+            <?php endforeach; ?>
+          </tbody>
+          <tfoot>
+            <tr><td colspan="4"><strong>Sub-Total Staff Costs</strong></td>
+                <td><strong><?= fmtMoney($totalStaff) ?></strong></td></tr>
+          </tfoot>
+        </table>
+        <?php else: ?>
+          <div style="padding:20px;color:var(--c-text-muted);">No staff costs entered.</div>
+        <?php endif; ?>
+      </div>
+    </div>
+
+    <!-- Direct Expenses -->
+    <div class="card">
+      <div class="card-header"><h3>19. Direct Project Expenses</h3></div>
+      <div class="card-body" style="padding:0;">
+        <?php if ($directExpenses): ?>
+        <table class="data-table">
+          <thead><tr><th>Description</th><th>Year 1 (৳)</th><th>Year 2 (৳)</th><th>Year 3 (৳)</th><th>Row Total</th></tr></thead>
+          <tbody>
+            <?php foreach($directExpenses as $d): $rt = rowTotal($d); ?>
+            <tr>
+              <td><?= htmlspecialchars($d['description'] ?? $d['category'] ?? '') ?></td>
+              <td><?= number_format((float)($d['year1']??$d['amount']??0),2) ?></td>
+              <td><?= number_format((float)($d['year2']??0),2) ?></td>
+              <td><?= number_format((float)($d['year3']??0),2) ?></td>
+              <td><strong><?= number_format($rt,2) ?></strong></td>
+            </tr>
+            <?php endforeach; ?>
+          </tbody>
+          <tfoot>
+            <tr><td colspan="4"><strong>Sub-Total Direct Expenses</strong></td>
+                <td><strong><?= fmtMoney($totalDirect) ?></strong></td></tr>
+          </tfoot>
+        </table>
+        <?php else: ?>
+          <div style="padding:20px;color:var(--c-text-muted);">No direct expenses entered.</div>
+        <?php endif; ?>
+      </div>
+    </div>
+
+    <!-- Total Cost -->
+    <div class="total-box" style="margin-bottom:20px;">
+      <div class="label">20. Total Project Cost</div>
+      <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:0.9rem;opacity:.85;">
+        <span>Sub-Total Staff Costs</span><span><?= fmtMoney($totalStaff) ?></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:0.9rem;opacity:.85;">
+        <span>Sub-Total Direct Expenses</span><span><?= fmtMoney($totalDirect) ?></span>
+      </div>
+      <div class="value" style="margin-top:12px;border-top:1px solid rgba(255,255,255,.3);padding-top:12px;display:flex;justify-content:space-between;">
+        <span style="font-size:1rem;">Grand Total</span><span><?= fmtMoney($totalCost) ?></span>
+      </div>
+    </div>
+
+    <!-- Uploaded Files -->
+    <div class="card">
+      <div class="card-header"><h3>Uploaded Files</h3></div>
+      <div class="card-body">
+        <?php
+        $fileLabels = [
+            'l_rev'   => '5c. Literature Review & Related Research',
+            'appendA' => 'Appendix-A',
+            'appendB' => 'Appendix-B',
+            'appendC' => 'Appendix-C',
+        ];
+        foreach ($fileLabels as $type => $label):
+        ?>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--c-border);">
+            <strong style="font-size:0.875rem;"><?= $label ?></strong>
+            <?php if (isset($atts[$type])): ?>
+              <a href="/DRE/<?= htmlspecialchars($atts[$type]['file_path']) ?>" target="_blank" class="btn btn-outline btn-sm">
+                <span class="material-icons-round">download</span>
+                <?= ev($atts[$type]['original_name']) ?>
+              </a>
+            <?php else: ?>
+              <span class="text-muted fs-sm">Not uploaded</span>
+            <?php endif; ?>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    </div>
+
+    <!-- Confirmation -->
+    <?php if ($sub['acknowledgement']): ?>
+    <div class="alert alert-success">
+      <span class="material-icons-round">verified_user</span>
+      <span>Declared and confirmed by: <strong><?= ev($sub['confirm_name'] ?? $user['name']) ?></strong></span>
+    </div>
+    <?php endif; ?>
+
+  </div>
 </div>
-
-<script>
-  document.getElementById('printPageBtn').addEventListener('click', function (e) {
-    e.preventDefault();
-    window.print();
-  });
-</script>
-
 
 <?php include __DIR__ . '/../src/includes/footer.php'; ?>

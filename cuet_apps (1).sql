@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 06, 2025 at 11:32 AM
+-- Generation Time: Mar 13, 2026 at 08:13 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -38,14 +38,6 @@ CREATE TABLE `bank_info` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `bank_info`
---
-
-INSERT INTO `bank_info` (`id`, `review_id`, `bank_name`, `account_number`, `routing_number`, `branch_name`, `created_at`, `updated_at`) VALUES
-(1, 4, 'IFIC', '080708798', '76865', 'kjhkhg', '2025-09-24 17:54:21', '2025-09-24 17:54:21'),
-(2, 5, 'testy', '8565', '67565', 'ppp', '2025-09-24 21:22:54', '2025-09-24 22:22:41');
-
 -- --------------------------------------------------------
 
 --
@@ -59,13 +51,6 @@ CREATE TABLE `committee_pool` (
   `added_at` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `committee_pool`
---
-
-INSERT INTO `committee_pool` (`id`, `user_id`, `added_by`, `added_at`) VALUES
-(2, 4, 3, '2025-09-19 19:12:49');
-
 -- --------------------------------------------------------
 
 --
@@ -76,14 +61,6 @@ CREATE TABLE `departments` (
   `id` int(11) NOT NULL,
   `name` varchar(191) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `departments`
---
-
-INSERT INTO `departments` (`id`, `name`) VALUES
-(2, 'Civil Engineering (CE)'),
-(1, 'Computer Science and Engineering (CSE)');
 
 -- --------------------------------------------------------
 
@@ -100,14 +77,6 @@ CREATE TABLE `modules` (
   `url` varchar(255) NOT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `modules`
---
-
-INSERT INTO `modules` (`id`, `name`, `slug`, `description`, `icon`, `url`, `is_active`) VALUES
-(1, 'DRE Module', 'dre', 'Departmental Review & Evaluation', 'fa-chalkboard', 'http://localhost:8081/DRE/sso/verify.php', 1),
-(2, 'Transport Module', 'transport', 'Transport Management', 'fa-bus', 'https://transport.example.com/sso/verify.php', 1);
 
 -- --------------------------------------------------------
 
@@ -126,14 +95,6 @@ CREATE TABLE `paper_calls` (
   `created_at` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `paper_calls`
---
-
-INSERT INTO `paper_calls` (`id`, `issue_date`, `deadline_date`, `review_deadline`, `message`, `signature`, `created_by`, `created_at`) VALUES
-(2, '2025-09-19', '2025-09-26', '2025-09-30', 'testkhlh\r\n', 'Regards,DRE', 3, '2025-09-19 19:14:30'),
-(3, '2025-09-20', '2025-09-22', '2025-09-25', 'test', 'Regards,\r\nDRE', 3, '2025-09-20 01:28:23');
-
 -- --------------------------------------------------------
 
 --
@@ -147,15 +108,6 @@ CREATE TABLE `paper_call_attachments` (
   `original_name` varchar(255) NOT NULL,
   `uploaded_at` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `paper_call_attachments`
---
-
-INSERT INTO `paper_call_attachments` (`id`, `paper_call_id`, `file_path`, `original_name`, `uploaded_at`) VALUES
-(3, 2, 'uploads/paper_calls/pc_2_68cd5736737e3.txt', '045CNF.txt', '2025-09-19 19:14:30'),
-(4, 2, 'uploads/paper_calls/pc_2_68cd5736740c5.docx', 'Registration Form(1) (2).docx', '2025-09-19 19:14:30'),
-(5, 3, 'uploads/paper_calls/pc_3_68cdaed77e69a.pdf', 'AB Tender Submission Document_Edited 1.pdf', '2025-09-20 01:28:23');
 
 -- --------------------------------------------------------
 
@@ -172,14 +124,6 @@ CREATE TABLE `reviewer_pool` (
   `added_at` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `reviewer_pool`
---
-
-INSERT INTO `reviewer_pool` (`id`, `user_id`, `external_name`, `external_email`, `added_by`, `added_at`) VALUES
-(1, 3, NULL, NULL, 3, '2025-09-19 19:09:43'),
-(3, NULL, 'Golam Mahmood', 'mahmoodmazum9@gmail.com', 3, '2025-09-19 21:06:13');
-
 -- --------------------------------------------------------
 
 --
@@ -195,14 +139,6 @@ CREATE TABLE `reviews` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `reviews`
---
-
-INSERT INTO `reviews` (`id`, `submission_id`, `reviewer_id`, `comments`, `created_at`, `updated_at`) VALUES
-(4, 5, 1, 'okkkkk', '2025-09-21 13:51:21', '2025-09-21 13:51:21'),
-(5, 5, 3, 'Array', '2025-09-21 13:51:21', '2025-09-24 22:22:05');
-
 -- --------------------------------------------------------
 
 --
@@ -216,24 +152,10 @@ CREATE TABLE `review_marks` (
   `allocated_marks` int(11) NOT NULL,
   `evaluated_marks` int(11) NOT NULL,
   `comment` text DEFAULT NULL,
+  `final_comment` text NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `review_marks`
---
-
-INSERT INTO `review_marks` (`id`, `review_id`, `criterion_index`, `allocated_marks`, `evaluated_marks`, `comment`, `created_at`, `updated_at`) VALUES
-(217, 5, 0, 0, 7, '', '2025-09-24 22:22:05', '2025-09-24 22:22:05'),
-(218, 5, 1, 0, 11, '', '2025-09-24 22:22:05', '2025-09-24 22:22:05'),
-(219, 5, 2, 0, 7, '', '2025-09-24 22:22:05', '2025-09-24 22:22:05'),
-(220, 5, 3, 0, 7, '', '2025-09-24 22:22:05', '2025-09-24 22:22:05'),
-(221, 5, 4, 0, 11, '', '2025-09-24 22:22:05', '2025-09-24 22:22:05'),
-(222, 5, 5, 0, 7, '', '2025-09-24 22:22:05', '2025-09-24 22:22:05'),
-(223, 5, 6, 0, 7, '', '2025-09-24 22:22:05', '2025-09-24 22:22:05'),
-(224, 5, 7, 0, 7, '', '2025-09-24 22:22:05', '2025-09-24 22:22:05'),
-(225, 5, 8, 0, 8, 'new', '2025-09-24 22:22:05', '2025-09-24 22:22:05');
 
 -- --------------------------------------------------------
 
@@ -276,18 +198,13 @@ CREATE TABLE `submissions` (
   `other_grants` longtext DEFAULT NULL,
   `contractual_obligations` longtext DEFAULT NULL,
   `ip_ownership` longtext DEFAULT NULL,
+  `confirm_name` varchar(255) DEFAULT NULL,
+  `literature_review_text` longtext NOT NULL,
   `acknowledgement` tinyint(1) DEFAULT 0,
-  `status` enum('reviewed','submitted') DEFAULT NULL,
+  `status` enum('Internal','submitted','External','Internal-External') DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `submissions`
---
-
-INSERT INTO `submissions` (`id`, `user_id`, `paper_call_id`, `department_id`, `year`, `phase`, `project_title`, `pi`, `co_pi`, `keywords`, `specific_objectives`, `background`, `project_status`, `literature_review`, `related_research`, `research_type`, `beneficiaries`, `outputs`, `transfer`, `organizational_outcomes`, `national_impacts`, `external_org`, `project_team`, `methodology`, `activities`, `milestones`, `start_date`, `duration_months`, `staff_costs`, `direct_expenses`, `total_cost`, `other_grants`, `contractual_obligations`, `ip_ownership`, `acknowledgement`, `status`, `created_at`, `updated_at`) VALUES
-(5, 3, 3, 2, 5765, 'kjbkgh', 'hgjhg', 'hjgjhg', 'jhgf', 'jhfjf', 'jhf', NULL, 'New', NULL, 'k.gjhgjh', 'Scientific', 'jhgjhgjhg', 'hgjhg', 'jhgfj', 'fjh', 'fjf', 'jgf', '[{\"name\":\"kjgkjg\",\"org\":\"kgjhg\",\"mm\":\"90\"}]', 'nbmnbjh', 'hgjhgjhg', 'hgjgjh', '2025-09-21', 89, '[{\"category\":\"Salaried Paid\",\"year\":2024,\"amount\":\"80\"}]', '[]', NULL, 'kjgkghjh', 'hjgjhgjhf', 'jhfjfjgf', 1, 'reviewed', '2025-09-21 19:44:42', '2025-09-25 04:22:05');
 
 -- --------------------------------------------------------
 
@@ -298,21 +215,11 @@ INSERT INTO `submissions` (`id`, `user_id`, `paper_call_id`, `department_id`, `y
 CREATE TABLE `submission_attachments` (
   `id` int(11) NOT NULL,
   `submission_id` int(11) NOT NULL,
-  `type` enum('l_rev','appendA','appendB','appendC') DEFAULT NULL,
+  `type` enum('l_rev','appendA','appendB','appendC','methodology') DEFAULT NULL,
   `file_path` varchar(500) NOT NULL,
   `original_name` varchar(255) NOT NULL,
   `uploaded_at` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `submission_attachments`
---
-
-INSERT INTO `submission_attachments` (`id`, `submission_id`, `type`, `file_path`, `original_name`, `uploaded_at`) VALUES
-(6, 5, 'l_rev', 'uploads/submissions/5/1758462282_601213635d58_AB_Tender_Submission_Document_Edited_1.pdf', 'AB Tender Submission Document_Edited 1.pdf', '2025-09-21 19:44:42'),
-(7, 5, 'appendA', 'uploads/submissions/5/1758462282_239bfff2461d_BDRAILWAY_TICKET5142136014-114115-411142-1321711-11103017313321011.pdf', 'BDRAILWAY_TICKET5142136014-114115-411142-1321711-11103017313321011.pdf', '2025-09-21 19:44:42'),
-(8, 5, 'appendB', 'uploads/submissions/5/1758462282_00db1faf74a5_july_25_officers_Part27.pdf', 'july_25_officers_Part27.pdf', '2025-09-21 19:44:42'),
-(9, 5, 'appendC', 'uploads/submissions/5/1758462282_31f6e6408fd2_kha_14_07_2025.pdf', 'kha_14_07_2025.pdf', '2025-09-21 19:44:42');
 
 -- --------------------------------------------------------
 
@@ -331,15 +238,6 @@ CREATE TABLE `users` (
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `users`
---
-
-INSERT INTO `users` (`id`, `email`, `name`, `picture`, `role`, `status`, `created_at`, `updated_at`) VALUES
-(2, 'golam.mahmood@cuet.ac.bd', 'Golam Mahmood', 'https://lh3.googleusercontent.com/a/ACg8ocKjVKOmdBTUv9c_0NH-gy0OSLj8S8aWE8IuGZSnitOdjWDyJD4=s96-c', 'admin', 'active', '2025-08-19 00:35:42', '2025-09-19 15:51:13'),
-(3, 'iict.admin.external@cuet.ac.bd', 'IICT External', 'https://lh3.googleusercontent.com/a/ACg8ocKop8kKsDRgPTuhaMIP5dg9kel2kSgE4XT3gA_hbnu6djMjnw=s96-c', 'teacher', 'active', '2025-09-19 16:13:50', '2025-09-25 01:13:35'),
-(4, 'chinmoy.bhowmik@cuet.ac.bd', 'Chinmoy Bhowmik', NULL, 'teacher', 'active', '2025-09-19 19:07:33', '2025-09-19 19:07:33');
-
 -- --------------------------------------------------------
 
 --
@@ -350,14 +248,6 @@ CREATE TABLE `user_modules` (
   `user_id` int(11) NOT NULL,
   `module_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `user_modules`
---
-
-INSERT INTO `user_modules` (`user_id`, `module_id`) VALUES
-(2, 1),
-(3, 1);
 
 --
 -- Indexes for dumped tables
@@ -467,73 +357,73 @@ ALTER TABLE `user_modules`
 -- AUTO_INCREMENT for table `bank_info`
 --
 ALTER TABLE `bank_info`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `committee_pool`
 --
 ALTER TABLE `committee_pool`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `departments`
 --
 ALTER TABLE `departments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `modules`
 --
 ALTER TABLE `modules`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `paper_calls`
 --
 ALTER TABLE `paper_calls`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `paper_call_attachments`
 --
 ALTER TABLE `paper_call_attachments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `reviewer_pool`
 --
 ALTER TABLE `reviewer_pool`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `reviews`
 --
 ALTER TABLE `reviews`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `review_marks`
 --
 ALTER TABLE `review_marks`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=226;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `submissions`
 --
 ALTER TABLE `submissions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `submission_attachments`
 --
 ALTER TABLE `submission_attachments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables

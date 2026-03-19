@@ -4,9 +4,8 @@ require __DIR__ . '/../src/db.php';
 Auth::requireLogin();
 $user = $_SESSION['user'];
 
-// Find reviewer_pool id for this user
 $stmt = $pdo->prepare("
-    SELECT rp.id AS reviewer_pool_id 
+    SELECT rp.id AS reviewer_pool_id
     FROM users u
     INNER JOIN reviewer_pool rp ON u.id = rp.user_id
     WHERE u.email = ?
@@ -14,21 +13,18 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$user['email']]);
 $reviewer = $stmt->fetch();
-
-if (!$reviewer) {
-    exit('You are not registered as a reviewer.');
-}
+if (!$reviewer) { exit('You are not registered as a reviewer.'); }
 
 $reviewerPoolId = $reviewer['reviewer_pool_id'];
 
-// Fetch reviews assigned to this reviewer where submission status is 'submitted'
 $stmt = $pdo->prepare("
-    SELECT r.id AS review_id, s.id AS submission_id, s.project_title, s.status, u.name AS submitter_name, pc.deadline_date
+    SELECT r.id AS review_id, s.id AS submission_id, s.project_title, s.status,
+           u.name AS submitter_name, pc.deadline_date, pc.review_deadline
     FROM reviews r
     INNER JOIN submissions s ON r.submission_id = s.id
     LEFT JOIN users u ON s.user_id = u.id
     LEFT JOIN paper_calls pc ON s.paper_call_id = pc.id
-    WHERE r.reviewer_id = ? AND pc.review_deadline >= CURDATE() 
+    WHERE r.reviewer_id = ? AND pc.review_deadline >= CURDATE()
     ORDER BY s.created_at DESC
 ");
 $stmt->execute([$reviewerPoolId]);
@@ -36,66 +32,69 @@ $reviews = $stmt->fetchAll();
 
 include __DIR__ . '/../src/includes/header.php';
 include __DIR__ . '/../src/includes/sidebar_teacher.php';
-
-// Define 8-color palette for table
-$colors = [
-    'primary' => '#1E88E5',
-    'secondary' => '#D81B60',
-    'success' => '#43A047',
-    'info' => '#00ACC1',
-    'warning' => '#FDD835',
-    'error' => '#E53935',
-    'light' => '#F5F5F5',
-    'dark' => '#424242'
-];
 ?>
 
-<div style="padding:24px; font-family: Roboto, sans-serif;">
-  <h2 style="color: <?= $colors['primary'] ?>;">Assigned Reviews</h2>
+<div class="main-content">
+  <div class="page-header">
+    <h1>Review Proposal</h1>
+    <div class="breadcrumb">Proposals assigned to you for review</div>
+  </div>
 
-  <?php if (!empty($_GET['msg'])): ?>
-    <div style="background-color: <?= $colors['info'] ?>; color:white; padding:12px; margin-top:16px; border-radius:4px;">
-      <?= htmlspecialchars($_GET['msg']) ?>
-    </div>
-  <?php endif; ?>
+  <div class="page-body">
 
-  <div style="margin-top:24px;">
-    <?php if (!$reviews): ?>
-        <p style="color: <?= $colors['dark'] ?>;">No submissions assigned to you for review.</p>
-    <?php else: ?>
-        <table style="width:100%; border-collapse:collapse;">
-          <thead style="background-color: <?= $colors['light'] ?>;">
-            <tr>
-              <th style="padding:8px; border-bottom:2px solid <?= $colors['primary'] ?>; text-align:left;">#</th>
-              <th style="padding:8px; border-bottom:2px solid <?= $colors['primary'] ?>; text-align:left;">Project Title</th>
-              <th style="padding:8px; border-bottom:2px solid <?= $colors['primary'] ?>; text-align:left;">Deadline</th>
-              <th style="padding:8px; border-bottom:2px solid <?= $colors['primary'] ?>; text-align:left;">Status</th>
-              <th style="padding:8px; border-bottom:2px solid <?= $colors['primary'] ?>; text-align:left;">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach($reviews as $r): ?>
-              <tr style="border-bottom:1px solid <?= $colors['light'] ?>;">
-                <td style="padding:8px;"><?= $r['submission_id'] ?></td>
-                <td style="padding:8px;"><?= htmlspecialchars($r['project_title']) ?></td>
-                <td style="padding:8px;"><?= htmlspecialchars($r['deadline_date']) ?></td>
-                <td style="padding:8px;"><?= htmlspecialchars($r['status']) ?></td>
-                <td style="padding:8px;">
-                  <a href="review_submission.php?id=<?= $r['submission_id'] ?>&review_id=<?= $r['review_id'] ?>" 
-                     style="background-color: <?= $colors['primary'] ?>; color:white; padding:6px 12px; border-radius:4px; text-decoration:none; margin-right:4px;">
-                     Review
-                  </a>
-
-                  <a href="bank_info.php?id=<?= $r['submission_id'] ?>&review_id=<?= $r['review_id'] ?>" 
-                     style="background-color: <?= $colors['secondary'] ?>; color:white; padding:6px 12px; border-radius:4px; text-decoration:none;">
-                     Bank Info
-                  </a>
-                </td>
-              </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+    <?php if (!empty($_GET['msg'])): ?>
+      <div class="alert alert-success">
+        <span class="material-icons-round">check_circle</span>
+        <span><?= htmlspecialchars($_GET['msg']) ?></span>
+      </div>
     <?php endif; ?>
+
+    <div class="card">
+      <div class="card-header"><h3>Assigned Proposals</h3></div>
+      <div class="card-body" style="padding:0;">
+        <?php if (!$reviews): ?>
+          <div style="padding:40px;text-align:center;color:var(--c-text-muted);">
+            <span class="material-icons-round" style="font-size:40px;opacity:.3;">rate_review</span>
+            <p style="margin-top:8px;">No proposals are currently assigned to you for review.</p>
+          </div>
+        <?php else: ?>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Project Title</th>
+                <th>Review Deadline</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach($reviews as $r): ?>
+                <tr>
+                  <td><?= $r['submission_id'] ?></td>
+                  <td><?= htmlspecialchars($r['project_title']) ?></td>
+                  <td><?= htmlspecialchars($r['review_deadline'] ?? $r['deadline_date']) ?></td>
+                  <td><span class="badge badge-primary"><?= htmlspecialchars($r['status']) ?></span></td>
+                  <td>
+                    <div class="btn-group">
+                      <a href="review_submission.php?id=<?= $r['submission_id'] ?>&review_id=<?= $r['review_id'] ?>"
+                         class="btn btn-primary btn-sm">
+                        <span class="material-icons-round">rate_review</span> Review
+                      </a>
+                      <a href="bank_info.php?id=<?= $r['submission_id'] ?>&review_id=<?= $r['review_id'] ?>"
+                         class="btn btn-secondary btn-sm">
+                        <span class="material-icons-round">account_balance</span> Bank Info
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        <?php endif; ?>
+      </div>
+    </div>
+
   </div>
 </div>
 

@@ -3,7 +3,7 @@ require __DIR__ . '/../vendor/autoload.php'; // include firebase/php-jwt
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
-define('PORTAL_JWT_SECRET', 'jhgsajf#^%#%#765'); // must match portal
+define('PORTAL_JWT_SECRET', 'uR7n@1#v$2b!kL9mP4dE6fG3sH0qR8tZ');
 define('EXPECTED_AUD', 'dre'); // module slug
 
 session_start();
