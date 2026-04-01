@@ -95,9 +95,6 @@ function ev($v){ return htmlspecialchars($v ?? 'N/A'); }
           <tr><th>2a. Principal Investigator (PI)</th><td><?= ev($sub['pi']) ?></td></tr>
           <tr><th>2b. Co-Principal Investigator (Co-PI)</th><td><?= ev($sub['co_pi']) ?></td></tr>
           <tr><th>3. Key Words</th><td><?= ev($sub['keywords']) ?></td></tr>
-          <tr><th>5a. Project Status</th><td><?= ev($sub['project_status']) ?></td></tr>
-          <tr><th>6. Type of Research</th><td><?= ev($sub['research_type']) ?></td></tr>
-          <tr><th>17. Duration (Months)</th><td><?= ev($sub['duration_months']) ?></td></tr>
         </table>
       </div>
     </div>
@@ -109,6 +106,7 @@ function ev($v){ return htmlspecialchars($v ?? 'N/A'); }
         <table class="info-table">
           <tr><th>4a. Specific Objectives</th><td><?= $sub['specific_objectives'] ?: '<em class="text-muted">—</em>' ?></td></tr>
           <tr><th>4b. General Objective</th><td><?= $sub['general_objectives'] ?: '<em class="text-muted">—</em>' ?></td></tr>
+          <tr><th>5a. Project Status</th><td><?= ev($sub['project_status']) ?></td></tr>
           <tr><th>5b. Project Summary</th><td><?= nl2br(ev($sub['literature_review_text'])) ?></td></tr>
           <tr><th>5c. Literature Review &amp; Related Research</th>
               <td>
@@ -121,6 +119,7 @@ function ev($v){ return htmlspecialchars($v ?? 'N/A'); }
                 <?php else: echo '<em class="text-muted">Not provided</em>'; endif; ?>
               </td>
           </tr>
+          <tr><th>6. Type of Research</th><td><?= ev($sub['research_type']) ?></td></tr>
           <tr><th>7. Direct Customers / Beneficiaries</th><td><?= $sub['beneficiaries'] ?: '<em class="text-muted">—</em>' ?></td></tr>
           <tr><th>8. Expected Outcomes</th><td><?= $sub['outputs'] ?: '<em class="text-muted">—</em>' ?></td></tr>
           <tr><th>9. Technology Transfer</th><td><?= nl2br(ev($sub['transfer'])) ?></td></tr>
@@ -138,6 +137,7 @@ function ev($v){ return htmlspecialchars($v ?? 'N/A'); }
           </tr>
           <tr><th>15. Project Activities</th><td><?= nl2br(ev($sub['activities'])) ?></td></tr>
           <tr><th>16. Key Milestones</th><td><?= nl2br(ev($sub['milestones'])) ?></td></tr>
+          <tr><th>17. Duration (Months)</th><td><?= ev($sub['duration_months']) ?></td></tr>
           <tr><th>21. Other Grants</th><td><?= nl2br(ev($sub['other_grants'])) ?></td></tr>
           <tr><th>22. Contractual Obligations</th><td><?= nl2br(ev($sub['contractual_obligations'])) ?></td></tr>
           <tr><th>23. IP Ownership</th><td><?= nl2br(ev($sub['ip_ownership'])) ?></td></tr>

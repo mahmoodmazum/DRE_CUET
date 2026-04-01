@@ -115,6 +115,9 @@ include __DIR__ . '/../src/includes/sidebar_teacher.php';
           <tr><th>15. Project Activities</th><td><?= nl2br(htmlspecialchars($submission['activities'] ?? '')) ?: '<em class="text-muted">—</em>' ?></td></tr>
           <tr><th>16. Key Milestones</th><td><?= nl2br(htmlspecialchars($submission['milestones'] ?? '')) ?: '<em class="text-muted">—</em>' ?></td></tr>
           <tr><th>17. Project Duration</th><td><?= htmlspecialchars($submission['duration_months'] ?? 'N/A') ?> months</td></tr>
+          <tr><th>21. Any Other Research Grant</th><td><?= nl2br(htmlspecialchars($submission['other_grants'] ?? '')) ?: '<em class="text-muted">—</em>' ?></td></tr>
+          <tr><th>22. Contractual Obligations under this Project</th><td><?= nl2br(htmlspecialchars($submission['contractual_obligations'] ?? '')) ?: '<em class="text-muted">—</em>' ?></td></tr>
+          <tr><th>23. Ownership of Intellectual Property Rights</th><td><?= nl2br(htmlspecialchars($submission['ip_ownership'] ?? '')) ?: '<em class="text-muted">—</em>' ?></td></tr>
         </table>
       </div>
     </div>

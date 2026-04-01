@@ -90,9 +90,13 @@ include __DIR__ . '/../src/includes/sidebar_external.php';
                 <div style="font-size:0.875rem;"><?= $submission['literature_review'] ?></div>
               <?php else: ?><em class="text-muted">No submission provided</em><?php endif; ?></td>
           </tr>
+          <tr><th>6. Type of Research</th><td><?= htmlspecialchars($submission['research_type'] ?? 'N/A') ?></td></tr>
+          <tr><th>7. Direct Customers / Beneficiaries</th><td><?= $submission['beneficiaries'] ?: '<em class="text-muted">—</em>' ?></td></tr>
           <tr><th>8. Expected Outcomes</th><td><?= $submission['outputs'] ?: '<em class="text-muted">—</em>' ?></td></tr>
+          <tr><th>9. Technology Transfer</th><td><?= nl2br(htmlspecialchars($submission['transfer'] ?? '')) ?: '<em class="text-muted">—</em>' ?></td></tr>
           <tr><th>10. Organizational Expected Outcomes</th><td><?= nl2br(htmlspecialchars($submission['organizational_outcomes'] ?? '')) ?: '<em class="text-muted">—</em>' ?></td></tr>
           <tr><th>11. National Impacts</th><td><?= nl2br(htmlspecialchars($submission['national_impacts'] ?? '')) ?: '<em class="text-muted">—</em>' ?></td></tr>
+          <tr><th>12. External Organizations</th><td><?= nl2br(htmlspecialchars($submission['external_org'] ?? '')) ?: '<em class="text-muted">—</em>' ?></td></tr>
           <tr><th>14. Research Methodology</th>
               <td><?php if (isset($atts['methodology'])): ?>
                 <a href="/DRE/<?= htmlspecialchars($atts['methodology']['file_path']) ?>" target="_blank" class="btn btn-outline btn-sm">
@@ -102,6 +106,10 @@ include __DIR__ . '/../src/includes/sidebar_external.php';
           </tr>
           <tr><th>15. Project Activities</th><td><?= nl2br(htmlspecialchars($submission['activities'] ?? '')) ?: '<em class="text-muted">—</em>' ?></td></tr>
           <tr><th>16. Key Milestones</th><td><?= nl2br(htmlspecialchars($submission['milestones'] ?? '')) ?: '<em class="text-muted">—</em>' ?></td></tr>
+          <tr><th>17. Project Duration</th><td><?= htmlspecialchars($submission['duration_months'] ?? 'N/A') ?> months</td></tr>
+          <tr><th>21. Any Other Research Grant</th><td><?= nl2br(htmlspecialchars($submission['other_grants'] ?? '')) ?: '<em class="text-muted">—</em>' ?></td></tr>
+          <tr><th>22. Contractual Obligations under this Project</th><td><?= nl2br(htmlspecialchars($submission['contractual_obligations'] ?? '')) ?: '<em class="text-muted">—</em>' ?></td></tr>
+          <tr><th>23. Ownership of Intellectual Property Rights</th><td><?= nl2br(htmlspecialchars($submission['ip_ownership'] ?? '')) ?: '<em class="text-muted">—</em>' ?></td></tr>
         </table>
       </div>
     </div>
