@@ -29,10 +29,13 @@ $staffCosts    = json_decode($sub['staff_costs'],    true) ?: [];
 $directExpenses = json_decode($sub['direct_expenses'], true) ?: [];
 $projectTeam   = json_decode($sub['project_team'],   true) ?: [];
 
-// Total helpers — support both old (amount) and new (year1/year2/year3) structures
-function rowTotal($r){ return (float)($r['year1']??$r['amount']??0)+(float)($r['year2']??0)+(float)($r['year3']??0); }
-$totalStaff  = array_sum(array_map('rowTotal', $staffCosts));
-$totalDirect = array_sum(array_map('rowTotal', $directExpenses));
+// Duration-aware helpers
+$durMonths  = (int)($sub['duration_months'] ?? 0);
+$durYears   = $durMonths===12 ? 1 : ($durMonths===24 ? 2 : 3);
+function rowTotal($r,$yr=3){ return (float)($r['year1']??$r['amount']??0)+(float)($yr>=2?$r['year2']??0:0)+(float)($yr>=3?$r['year3']??0:0); }
+function yearVal($r,$y){ return (float)(($y===1)?($r['year1']??$r['amount']??0):($r['year'.($y)]??0)); }
+$totalStaff  = array_sum(array_map(fn($r)=>rowTotal($r,$durYears), $staffCosts));
+$totalDirect = array_sum(array_map(fn($r)=>rowTotal($r,$durYears), $directExpenses));
 $totalCost   = $totalStaff + $totalDirect;
 
 // Attachments
@@ -86,16 +89,15 @@ function ev($v){ return htmlspecialchars($v ?? 'N/A'); }
       <div class="card-header"><h3>Proposal Overview</h3></div>
       <div class="card-body" style="padding:0;">
         <table class="info-table">
-          <tr><th>Project Title</th><td><strong><?= ev($sub['project_title']) ?></strong></td></tr>
           <tr><th>Department</th><td><?= ev($sub['department_name']) ?></td></tr>
           <tr><th>Year / Phase</th><td><?= ev($sub['year']) ?> / <?= ev($sub['phase']) ?></td></tr>
-          <tr><th>Principal Investigator (PI)</th><td><?= ev($sub['pi']) ?></td></tr>
-          <tr><th>Co-Principal Investigator (Co-PI)</th><td><?= ev($sub['co_pi']) ?></td></tr>
-          <tr><th>Keywords</th><td><?= ev($sub['keywords']) ?></td></tr>
-          <tr><th>Project Status</th><td><?= ev($sub['project_status']) ?></td></tr>
-          <tr><th>Type of Research</th><td><?= ev($sub['research_type']) ?></td></tr>
-          <tr><th>Start Date</th><td><?= ev($sub['start_date']) ?></td></tr>
-          <tr><th>Duration (Months)</th><td><?= ev($sub['duration_months']) ?></td></tr>
+          <tr><th>1. Project Title</th><td><strong><?= ev($sub['project_title']) ?></strong></td></tr>
+          <tr><th>2a. Principal Investigator (PI)</th><td><?= ev($sub['pi']) ?></td></tr>
+          <tr><th>2b. Co-Principal Investigator (Co-PI)</th><td><?= ev($sub['co_pi']) ?></td></tr>
+          <tr><th>3. Key Words</th><td><?= ev($sub['keywords']) ?></td></tr>
+          <tr><th>5a. Project Status</th><td><?= ev($sub['project_status']) ?></td></tr>
+          <tr><th>6. Type of Research</th><td><?= ev($sub['research_type']) ?></td></tr>
+          <tr><th>17. Duration (Months)</th><td><?= ev($sub['duration_months']) ?></td></tr>
         </table>
       </div>
     </div>
@@ -105,7 +107,8 @@ function ev($v){ return htmlspecialchars($v ?? 'N/A'); }
       <div class="card-header"><h3>Proposal Content</h3></div>
       <div class="card-body" style="padding:0;">
         <table class="info-table">
-          <tr><th>4. Specific Objectives</th><td><?= nl2br(ev($sub['specific_objectives'])) ?></td></tr>
+          <tr><th>4a. Specific Objectives</th><td><?= $sub['specific_objectives'] ?: '<em class="text-muted">—</em>' ?></td></tr>
+          <tr><th>4b. General Objective</th><td><?= $sub['general_objectives'] ?: '<em class="text-muted">—</em>' ?></td></tr>
           <tr><th>5b. Project Summary</th><td><?= nl2br(ev($sub['literature_review_text'])) ?></td></tr>
           <tr><th>5c. Literature Review &amp; Related Research</th>
               <td>
@@ -113,11 +116,13 @@ function ev($v){ return htmlspecialchars($v ?? 'N/A'); }
                   <a href="/DRE/<?= htmlspecialchars($atts['l_rev']['file_path']) ?>" target="_blank" class="btn btn-outline btn-sm">
                     <span class="material-icons-round">download</span> <?= ev($atts['l_rev']['original_name']) ?>
                   </a>
-                <?php else: echo '<em class="text-muted">Not uploaded</em>'; endif; ?>
+                <?php elseif (!empty($sub['literature_review'])): ?>
+                  <div style="font-size:0.875rem;"><?= $sub['literature_review'] ?></div>
+                <?php else: echo '<em class="text-muted">Not provided</em>'; endif; ?>
               </td>
           </tr>
-          <tr><th>7. Beneficiaries</th><td><?= nl2br(ev($sub['beneficiaries'])) ?></td></tr>
-          <tr><th>8. Expected Outcomes</th><td><?= nl2br(ev($sub['outputs'])) ?></td></tr>
+          <tr><th>7. Direct Customers / Beneficiaries</th><td><?= $sub['beneficiaries'] ?: '<em class="text-muted">—</em>' ?></td></tr>
+          <tr><th>8. Expected Outcomes</th><td><?= $sub['outputs'] ?: '<em class="text-muted">—</em>' ?></td></tr>
           <tr><th>9. Technology Transfer</th><td><?= nl2br(ev($sub['transfer'])) ?></td></tr>
           <tr><th>10. Organizational Expected Outcomes</th><td><?= nl2br(ev($sub['organizational_outcomes'])) ?></td></tr>
           <tr><th>11. National Impacts</th><td><?= nl2br(ev($sub['national_impacts'])) ?></td></tr>
@@ -170,25 +175,28 @@ function ev($v){ return htmlspecialchars($v ?? 'N/A'); }
     <?php endif; ?>
 
     <!-- Staff Costs -->
+    <?php $yrCols = range(1, $durYears); ?>
     <div class="card">
       <div class="card-header"><h3>18. Additional Staff Costs</h3></div>
       <div class="card-body" style="padding:0;">
         <?php if ($staffCosts): ?>
         <table class="data-table">
-          <thead><tr><th>Staff Category</th><th>Year 1 (৳)</th><th>Year 2 (৳)</th><th>Year 3 (৳)</th><th>Row Total</th></tr></thead>
+          <thead><tr><th>Staff Category</th>
+            <?php foreach($yrCols as $y): ?><th>Year <?=$y?> (৳)</th><?php endforeach; ?>
+            <th>Row Total</th></tr></thead>
           <tbody>
-            <?php foreach($staffCosts as $c): $rt = rowTotal($c); ?>
+            <?php foreach($staffCosts as $c): $rt = rowTotal($c,$durYears); ?>
             <tr>
               <td><?= htmlspecialchars($c['category'] ?? '') ?></td>
-              <td><?= number_format((float)($c['year1']??$c['amount']??0),2) ?></td>
-              <td><?= number_format((float)($c['year2']??0),2) ?></td>
-              <td><?= number_format((float)($c['year3']??0),2) ?></td>
+              <?php foreach($yrCols as $y): ?>
+                <td><?= number_format(yearVal($c,$y),2) ?></td>
+              <?php endforeach; ?>
               <td><strong><?= number_format($rt,2) ?></strong></td>
             </tr>
             <?php endforeach; ?>
           </tbody>
           <tfoot>
-            <tr><td colspan="4"><strong>Sub-Total Staff Costs</strong></td>
+            <tr><td colspan="<?= count($yrCols)+1 ?>"><strong>Sub-Total Staff Costs</strong></td>
                 <td><strong><?= fmtMoney($totalStaff) ?></strong></td></tr>
           </tfoot>
         </table>
@@ -204,20 +212,22 @@ function ev($v){ return htmlspecialchars($v ?? 'N/A'); }
       <div class="card-body" style="padding:0;">
         <?php if ($directExpenses): ?>
         <table class="data-table">
-          <thead><tr><th>Description</th><th>Year 1 (৳)</th><th>Year 2 (৳)</th><th>Year 3 (৳)</th><th>Row Total</th></tr></thead>
+          <thead><tr><th>Description</th>
+            <?php foreach($yrCols as $y): ?><th>Year <?=$y?> (৳)</th><?php endforeach; ?>
+            <th>Row Total</th></tr></thead>
           <tbody>
-            <?php foreach($directExpenses as $d): $rt = rowTotal($d); ?>
+            <?php foreach($directExpenses as $d): $rt = rowTotal($d,$durYears); ?>
             <tr>
               <td><?= htmlspecialchars($d['description'] ?? $d['category'] ?? '') ?></td>
-              <td><?= number_format((float)($d['year1']??$d['amount']??0),2) ?></td>
-              <td><?= number_format((float)($d['year2']??0),2) ?></td>
-              <td><?= number_format((float)($d['year3']??0),2) ?></td>
+              <?php foreach($yrCols as $y): ?>
+                <td><?= number_format(yearVal($d,$y),2) ?></td>
+              <?php endforeach; ?>
               <td><strong><?= number_format($rt,2) ?></strong></td>
             </tr>
             <?php endforeach; ?>
           </tbody>
           <tfoot>
-            <tr><td colspan="4"><strong>Sub-Total Direct Expenses</strong></td>
+            <tr><td colspan="<?= count($yrCols)+1 ?>"><strong>Sub-Total Direct Expenses</strong></td>
                 <td><strong><?= fmtMoney($totalDirect) ?></strong></td></tr>
           </tfoot>
         </table>
@@ -230,7 +240,15 @@ function ev($v){ return htmlspecialchars($v ?? 'N/A'); }
     <!-- Total Cost -->
     <div class="total-box" style="margin-bottom:20px;">
       <div class="label">20. Total Project Cost</div>
-      <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:0.9rem;opacity:.85;">
+      <?php for($y=1;$y<=$durYears;$y++):
+        $yrS=array_sum(array_map(fn($r)=>yearVal($r,$y),$staffCosts));
+        $yrE=array_sum(array_map(fn($r)=>yearVal($r,$y),$directExpenses));
+      ?>
+      <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:0.875rem;opacity:.85;border-bottom:1px solid rgba(255,255,255,.15);padding-bottom:4px;">
+        <span>Year <?=$y?> Total</span><span><?= fmtMoney($yrS+$yrE) ?></span>
+      </div>
+      <?php endfor; ?>
+      <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:0.9rem;opacity:.85;">
         <span>Sub-Total Staff Costs</span><span><?= fmtMoney($totalStaff) ?></span>
       </div>
       <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:0.9rem;opacity:.85;">

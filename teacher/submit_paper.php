@@ -96,7 +96,12 @@ function sel($a,$b){ return ($a==$b)?'selected':''; }
 
 /* Sticky action bar */
 .action-bar{background:var(--c-surface);border-top:1px solid var(--c-border);padding:14px 28px;display:flex;align-items:center;gap:12px;position:sticky;bottom:0;z-index:10;box-shadow:0 -2px 8px rgba(0,0,0,0.06);}
+/* LR toggle */
+.lr-toggle label{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:0.875rem;font-weight:500;padding:6px 14px;border:1.5px solid var(--c-border);border-radius:20px;transition:all .15s;}
+.lr-toggle label:has(input:checked){border-color:var(--c-primary);background:var(--c-primary-bg);color:var(--c-primary-dark);}
 </style>
+<link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.js"></script>
 
 <div class="main-content">
   <div class="page-header">
@@ -174,16 +179,36 @@ function sel($a,$b){ return ($a==$b)?'selected':''; }
       <input type="text" name="keywords" value="<?= $editing ? ev($editData['keywords']) : '' ?>" placeholder="keyword1, keyword2, keyword3...">
     </div>
 
-    <!-- ── 4. Specific Objectives ── -->
-    <div class="numbered-section">
-      <div class="sec-head">
-        <span class="sec-num">4</span>
-        <div><div class="sec-title">Specific Objectives of the Project</div>
-        <div class="sec-sub">Please describe the measurable objectives of the project and define the expected results. Use results-oriented wording with verbs such as “to define ...” to determine….”to identify …...”</div></div>
+    <!-- ── 4a. Specific Objectives ── -->
+<div class="numbered-section">
+  <div class="sec-head">
+    <span class="sec-num">4a</span>
+    <div>
+      <div class="sec-title">Specific Objectives of the Project</div>
+      <div class="sec-sub">
+        Please describe the measurable objectives of the project and define the expected results.
+        Use results-oriented wording with verbs such as “to define ...”, “to determine…”, “to identify …”
       </div>
-      <textarea name="specific_objectives" rows="4" placeholder="List specific, measurable objectives..."><?= $editing ? ev($editData['specific_objectives']) : '' ?></textarea>
     </div>
+  </div>
+  <textarea name="specific_objectives" id="sn_specific_objectives" rows="4"
+    placeholder="List specific, measurable objectives..."><?= $editing ? ($editData['specific_objectives'] ?? '') : '' ?></textarea>
+</div>
 
+<!-- ── 4b. General Objective ── -->
+<div class="numbered-section">
+  <div class="sec-head">
+    <span class="sec-num">4b</span>
+    <div>
+      <div class="sec-title">General Objective of the Project</div>
+      <div class="sec-sub">
+        Please describe the general/overall objective of the project
+      </div>
+    </div>
+  </div>
+  <textarea name="general_objectives" id="sn_general_objectives" rows="4"
+    placeholder="Describe the general objective..."><?= $editing ? ($editData['general_objectives'] ?? '') : '' ?></textarea>
+</div>
     <!-- ── 5a. Project Status ── -->
     <div class="numbered-section">
       <div class="sec-head">
@@ -210,25 +235,49 @@ function sel($a,$b){ return ($a==$b)?'selected':''; }
     </div>
 
     <!-- ── 5c. Literature Review and Related Research ── -->
+    <?php
+      $lr_has_file = $editing && isset($existingAtts['l_rev']);
+      $lr_has_text = $editing && !empty($editData['literature_review']);
+      $lr_initial  = ($lr_has_text && !$lr_has_file) ? 'text' : 'file';
+    ?>
     <div class="numbered-section">
       <div class="sec-head">
         <span class="sec-num">5c</span>
         <div><div class="sec-title">Literature Review and Related Research</div>
-        <div class="sec-sub">Upload a document (PDF, DOC, DOCX — max 10MB)</div></div>
+        <div class="sec-sub">Provide either a file upload or text input — not both</div></div>
       </div>
-      <div class="file-zone">
-        <span class="material-icons-round" style="font-size:32px;color:var(--c-primary);opacity:.6;">upload_file</span>
-        <div style="font-size:0.82rem;color:var(--c-text-muted);margin:6px 0;">Choose file to upload</div>
-        <input type="file" name="related_research_file" accept=".pdf,.doc,.docx">
+      <!-- Toggle -->
+      <div class="lr-toggle" style="display:flex;gap:10px;margin-bottom:14px;">
+        <label>
+          <input type="radio" name="lr_input_type" value="file" id="lr_type_file" <?= $lr_initial==='file'?'checked':'' ?>>
+          <span class="material-icons-round" style="font-size:16px;">upload_file</span> Upload File
+        </label>
+        <label>
+          <input type="radio" name="lr_input_type" value="text" id="lr_type_text" <?= $lr_initial==='text'?'checked':'' ?>>
+          <span class="material-icons-round" style="font-size:16px;">edit_note</span> Text Input
+        </label>
       </div>
-      <?php if ($editing && isset($existingAtts['l_rev'])): ?>
-        <div class="appendix-block existing-file" style="margin-top:8px;">
-          <strong>Current file:</strong>
-          <a href="/DRE/<?= ev($existingAtts['l_rev']['file_path']) ?>" target="_blank">
-            <?= ev($existingAtts['l_rev']['original_name']) ?>
-          </a> — upload new to replace
+      <!-- File zone -->
+      <div id="lr_file_zone" <?= $lr_initial==='text'?'style="display:none"':'' ?>>
+        <div class="file-zone">
+          <span class="material-icons-round" style="font-size:32px;color:var(--c-primary);opacity:.6;">upload_file</span>
+          <div style="font-size:0.82rem;color:var(--c-text-muted);margin:6px 0;">Choose file to upload (PDF, DOC, DOCX — max 10MB)</div>
+          <input type="file" name="related_research_file" id="lr_file_input" accept=".pdf,.doc,.docx">
         </div>
-      <?php endif; ?>
+        <?php if ($lr_has_file): ?>
+          <div class="appendix-block existing-file" style="margin-top:8px;">
+            <strong>Current file:</strong>
+            <a href="/DRE/<?= ev($existingAtts['l_rev']['file_path']) ?>" target="_blank">
+              <?= ev($existingAtts['l_rev']['original_name']) ?>
+            </a> — upload new to replace
+          </div>
+        <?php endif; ?>
+      </div>
+      <!-- Text zone -->
+      <div id="lr_text_zone" <?= $lr_initial==='file'?'style="display:none"':'' ?>>
+        <textarea name="literature_review" id="literature_review" rows="6"
+          placeholder="Write your literature review and related research here..."><?= $lr_has_text ? ($editData['literature_review'] ?? '') : '' ?></textarea>
+      </div>
     </div>
 
     <!-- ── 6. Type of Research ── -->
@@ -254,6 +303,7 @@ function sel($a,$b){ return ($a==$b)?'selected':''; }
       11 => ['national_impacts',     'National Impacts Expected',                               'Provide details'],
       12 => ['external_org',         'Outside Research Organizations / Industries Involved',    'please identify all research organizations collaborating in the project and describe their role/contribution to the project'],
     ];
+    $sn_sections = [7, 8]; // use Summernote for these
     foreach($areas as $num => [$key, $title, $hint]): ?>
     <div class="numbered-section">
       <div class="sec-head">
@@ -261,7 +311,13 @@ function sel($a,$b){ return ($a==$b)?'selected':''; }
         <div><div class="sec-title"><?= $title ?></div>
         <div class="sec-sub"><?= $hint ?></div></div>
       </div>
-      <textarea name="<?= $key ?>" rows="3" placeholder="<?= $title ?>..."><?= $editing ? ev($editData[$key]) : '' ?></textarea>
+      <?php if (in_array($num, $sn_sections)): ?>
+      <textarea name="<?= $key ?>" id="sn_<?= $key ?>" rows="4"
+        placeholder="<?= $title ?>..."><?= $editing ? ($editData[$key] ?? '') : '' ?></textarea>
+      <?php else: ?>
+      <textarea name="<?= $key ?>" rows="3"
+        placeholder="<?= $title ?>..."><?= $editing ? ev($editData[$key]) : '' ?></textarea>
+      <?php endif; ?>
     </div>
     <?php endforeach; ?>
 
@@ -384,17 +440,7 @@ function sel($a,$b){ return ($a==$b)?'selected':''; }
       <textarea name="activities" rows="4" placeholder="List the main project activities..."><?= $editing ? ev($editData['activities']) : '' ?></textarea>
     </div>
 
-    <!-- ── 16. Key Milestones ── -->
-    <div class="numbered-section">
-      <div class="sec-head">
-        <span class="sec-num">16</span>
-        <div><div class="sec-title">Key Milestones</div>
-        <div class="sec-sub">please list and describe the principle milestones of the project. Timing of milestones is to be shown in the Gantt chart as attached in Appendix B. A key milestone is reached when a significant phase in the project is concluded. E.g. completion of test, review, commissioning of equipment, etc.</div></div>
-      </div>
-      <textarea name="milestones" rows="4" placeholder="Milestone 1: Month X — Description..."><?= $editing ? ev($editData['milestones']) : '' ?></textarea>
-    </div>
-
-    <!-- ── Appendix-B ── -->
+    <!-- ── Appendix-B (after Section 15) ── -->
     <div class="appendix-block">
       <div class="app-title">
         <span class="material-icons-round">attach_file</span>
@@ -413,23 +459,31 @@ function sel($a,$b){ return ($a==$b)?'selected':''; }
       <?php endif; ?>
     </div>
 
+    <!-- ── 16. Key Milestones ── -->
+    <div class="numbered-section">
+      <div class="sec-head">
+        <span class="sec-num">16</span>
+        <div><div class="sec-title">Key Milestones</div>
+        <div class="sec-sub">please list and describe the principle milestones of the project. Timing of milestones is to be shown in the Gantt chart as attached in Appendix B. A key milestone is reached when a significant phase in the project is concluded. E.g. completion of test, review, commissioning of equipment, etc.</div></div>
+      </div>
+      <textarea name="milestones" rows="4" placeholder="Milestone 1: Month X — Description..."><?= $editing ? ev($editData['milestones']) : '' ?></textarea>
+    </div>
+
     <!-- ── 17. Duration ── -->
     <div class="numbered-section">
       <div class="sec-head">
         <span class="sec-num">17</span>
-        <span class="sec-title">Project Duration</span> 
-        <div><div class="sec-sub">State the planned starting date of the project and the elapsed time, in month, to complete this project</div></div>
+        <span class="sec-title">Project Duration</span>
+        <div><div class="sec-sub">State the elapsed time, in months, to complete this project</div></div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="field-label">Start Date</label>
-          <input type="date" name="start_date" value="<?= $editing ? ev($editData['start_date']) : '' ?>">
-        </div>
-        <div class="form-group">
-          <label class="field-label">Duration (Months) <span class="text-muted fs-sm">— max 36</span></label>
-          <input type="number" name="duration_months" min="1" max="36"
-                 value="<?= $editing ? ev($editData['duration_months']) : '' ?>" placeholder="e.g. 24">
-        </div>
+      <div class="form-group" style="max-width:300px;">
+        <label class="field-label">Duration (Months)</label>
+        <select name="duration_months" id="durationSelect" class="no-select2">
+          <option value="">-- Select Duration --</option>
+          <option value="12" <?= $editing && ($editData['duration_months']??0)==12 ? 'selected' : '' ?>>12 Months (Year 1 only)</option>
+          <option value="24" <?= $editing && ($editData['duration_months']??0)==24 ? 'selected' : '' ?>>24 Months (Year 1 &amp; Year 2)</option>
+          <option value="36" <?= $editing && ($editData['duration_months']??0)==36 ? 'selected' : '' ?>>36 Months (Year 1, Year 2 &amp; Year 3)</option>
+        </select>
       </div>
     </div>
 
@@ -441,9 +495,7 @@ function sel($a,$b){ return ($a==$b)?'selected':''; }
         <div class="sec-sub">please include the yearly staff costs of the project. Present staff costs are not included. Give details of calculation based on Appendix-A</div></div>
       </div>
 
-      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 32px;gap:8px;padding:0 0 6px;font-size:0.75rem;font-weight:600;color:var(--c-text-muted);text-transform:uppercase;letter-spacing:.05em;">
-        <span>Staff Category</span><span style="text-align:center;">Year 1 (৳)</span><span style="text-align:center;">Year 2 (৳)</span><span style="text-align:center;">Year 3 (৳)</span><span></span>
-      </div>
+      <div id="staffHeader" style="display:grid;gap:8px;padding:0 0 6px;font-size:0.75rem;font-weight:600;color:var(--c-text-muted);text-transform:uppercase;letter-spacing:.05em;"></div>
 
       <div id="staffCostRows"></div>
 
@@ -467,9 +519,7 @@ function sel($a,$b){ return ($a==$b)?'selected':''; }
         <div class="sec-sub">please include the yearly direct expenses of the project. For computation. Use the Direct Expenses Estimation from as attached in Appendix-C</div></div>
       </div>
 
-      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 32px;gap:8px;padding:0 0 6px;font-size:0.75rem;font-weight:600;color:var(--c-text-muted);text-transform:uppercase;letter-spacing:.05em;">
-        <span>Expense Description</span><span style="text-align:center;">Year 1 (৳)</span><span style="text-align:center;">Year 2 (৳)</span><span style="text-align:center;">Year 3 (৳)</span><span></span>
-      </div>
+      <div id="expenseHeader" style="display:grid;gap:8px;padding:0 0 6px;font-size:0.75rem;font-weight:600;color:var(--c-text-muted);text-transform:uppercase;letter-spacing:.05em;"></div>
 
       <div id="directExpenseRows"></div>
 
@@ -488,7 +538,8 @@ function sel($a,$b){ return ($a==$b)?'selected':''; }
     <!-- ── 20. Total Cost ── -->
     <div class="grand-total-card">
       <div style="font-size:0.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.75;margin-bottom:12px;">20. Total Cost</div>
-      <div class="gt-row">
+      <div id="gt_year_rows"></div>
+      <div class="gt-row" style="border-top:1px solid rgba(255,255,255,.2);padding-top:8px;margin-top:4px;">
         <span>Sub-Total Staff Costs (Section 18)</span>
         <span id="gt_staff">৳ 0.00</span>
       </div>
@@ -570,6 +621,47 @@ function sel($a,$b){ return ($a==$b)?'selected':''; }
 
 <script>
 $(function(){
+
+  // ── Duration & dynamic year columns ───────────────────────────
+  let selectedDuration = parseInt($('#durationSelect').val()) || 0;
+
+  function getYearCols(){
+    if(selectedDuration===12) return 1;
+    if(selectedDuration===24) return 2;
+    return 3; // 36 or unset => show all
+  }
+
+  function updateBudgetHeaders(){
+    const yr = getYearCols();
+    const colBase = '2fr';
+    let sCols = colBase, sHdr = '<span>Staff Category</span>';
+    let eCols = colBase, eHdr = '<span>Expense Description</span>';
+    for(let y=1; y<=yr; y++){
+      sCols += ' 1fr'; sHdr += `<span style="text-align:center;">Year ${y} (৳)</span>`;
+      eCols += ' 1fr'; eHdr += `<span style="text-align:center;">Year ${y} (৳)</span>`;
+    }
+    sCols += ' 32px'; sHdr += '<span></span>';
+    eCols += ' 32px'; eHdr += '<span></span>';
+    $('#staffHeader').css('grid-template-columns', sCols).html(sHdr);
+    $('#expenseHeader').css('grid-template-columns', eCols).html(eHdr);
+  }
+
+  $('#durationSelect').on('change', function(){
+    selectedDuration = parseInt($(this).val()) || 0;
+    updateBudgetHeaders();
+    renderStaff();
+    renderExpenses();
+    updateGrandTotal();
+  });
+
+  // ── LR toggle (5c) ────────────────────────────────────────────
+  $('input[name="lr_input_type"]').on('change', function(){
+    if($(this).val()==='file'){
+      $('#lr_file_zone').show(); $('#lr_text_zone').hide();
+    } else {
+      $('#lr_file_zone').hide(); $('#lr_text_zone').show();
+    }
+  });
 
   // ── Project Team ──────────────────────────────────────────────
   let team = [];
@@ -660,14 +752,16 @@ $(function(){
   ];
 
   function renderStaff(){
+    const yr = getYearCols();
+    const colTpl = yr===1 ? '2fr 1fr 32px' : yr===2 ? '2fr 1fr 1fr 32px' : '2fr 1fr 1fr 1fr 32px';
     const wrap = $('#staffCostRows').empty();
     staffCosts.forEach((s, i) => {
       const opts = staffCategories.map(c =>
         `<option value="${c}" ${s.category===c?'selected':''}>${c}</option>`
       ).join('');
-      wrap.append(`
+      let rowHtml = `
         <div class="cost-entry">
-          <div class="cost-entry-grid staff-grid">
+          <div class="cost-entry-grid" style="grid-template-columns:${colTpl};">
             <div>
               <select class="no-select2" data-i="${i}" data-k="category" style="display:block;">
                 <option value="">Select Category</option>${opts}
@@ -677,32 +771,42 @@ $(function(){
               <div class="yr-label">Year 1</div>
               <input type="number" min="0" step="1" placeholder="0"
                      value="${s.year1||0}" data-i="${i}" data-k="year1">
-            </div>
+            </div>`;
+      if(yr>=2) rowHtml += `
             <div>
               <div class="yr-label">Year 2</div>
               <input type="number" min="0" step="1" placeholder="0"
                      value="${s.year2||0}" data-i="${i}" data-k="year2">
-            </div>
+            </div>`;
+      if(yr>=3) rowHtml += `
             <div>
               <div class="yr-label">Year 3</div>
               <input type="number" min="0" step="1" placeholder="0"
                      value="${s.year3||0}" data-i="${i}" data-k="year3">
-            </div>
+            </div>`;
+      const rt = (parseFloat(s.year1)||0)+(yr>=2?parseFloat(s.year2)||0:0)+(yr>=3?parseFloat(s.year3)||0:0);
+      rowHtml += `
             <button type="button" class="rm-btn staff-rm" data-i="${i}" title="Remove">
               <span class="material-icons-round">delete_outline</span>
             </button>
           </div>
           <div style="text-align:right;font-size:0.78rem;color:var(--c-text-muted);margin-top:4px;">
-            Row total: ৳ <span class="row-total">${((s.year1||0)+(s.year2||0)+(s.year3||0)).toLocaleString()}</span>
+            Row total: ৳ <span class="row-total">${rt.toLocaleString()}</span>
           </div>
-        </div>`);
+        </div>`;
+      wrap.append(rowHtml);
     });
     updateStaffTotals();
   }
 
   function updateStaffTotals(){
+    const yr = getYearCols();
     let total = 0;
-    staffCosts.forEach(s => { total += (parseFloat(s.year1)||0)+(parseFloat(s.year2)||0)+(parseFloat(s.year3)||0); });
+    staffCosts.forEach(s => {
+      total += (parseFloat(s.year1)||0)
+             + (yr>=2 ? parseFloat(s.year2)||0 : 0)
+             + (yr>=3 ? parseFloat(s.year3)||0 : 0);
+    });
     const fmt = '৳ ' + total.toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2});
     $('#staffSubtotal').text(fmt);
     $('#gt_staff').text(fmt);
@@ -713,8 +817,8 @@ $(function(){
   $(document).on('input change','#staffCostRows [data-i]', function(){
     const i = $(this).data('i'), k = $(this).data('k');
     staffCosts[i][k] = $(this).val();
-    const r = staffCosts[i];
-    const rt = (parseFloat(r.year1)||0)+(parseFloat(r.year2)||0)+(parseFloat(r.year3)||0);
+    const r = staffCosts[i]; const yr = getYearCols();
+    const rt = (parseFloat(r.year1)||0)+(yr>=2?parseFloat(r.year2)||0:0)+(yr>=3?parseFloat(r.year3)||0:0);
     $(this).closest('.cost-entry').find('.row-total').text(rt.toLocaleString());
     updateStaffTotals();
   });
@@ -734,11 +838,13 @@ $(function(){
   
 
   function renderExpenses(){
+    const yr = getYearCols();
+    const colTpl = yr===1 ? '2fr 1fr 32px' : yr===2 ? '2fr 1fr 1fr 32px' : '2fr 1fr 1fr 1fr 32px';
     const wrap = $('#directExpenseRows').empty();
     directExpenses.forEach((d, i) => {
-      wrap.append(`
+      let rowHtml = `
         <div class="cost-entry">
-          <div class="cost-entry-grid expense-grid">
+          <div class="cost-entry-grid" style="grid-template-columns:${colTpl};">
             <div>
               <input type="text" placeholder="Expense description (e.g. Travel, Equipment...)"
                      value="${escHtml(d.description||d.category||'')}" data-i="${i}" data-k="description">
@@ -747,32 +853,42 @@ $(function(){
               <div class="yr-label">Year 1</div>
               <input type="number" min="0" step="1" placeholder="0"
                      value="${d.year1||0}" data-i="${i}" data-k="year1">
-            </div>
+            </div>`;
+      if(yr>=2) rowHtml += `
             <div>
               <div class="yr-label">Year 2</div>
               <input type="number" min="0" step="1" placeholder="0"
                      value="${d.year2||0}" data-i="${i}" data-k="year2">
-            </div>
+            </div>`;
+      if(yr>=3) rowHtml += `
             <div>
               <div class="yr-label">Year 3</div>
               <input type="number" min="0" step="1" placeholder="0"
                      value="${d.year3||0}" data-i="${i}" data-k="year3">
-            </div>
+            </div>`;
+      const rt = (parseFloat(d.year1)||0)+(yr>=2?parseFloat(d.year2)||0:0)+(yr>=3?parseFloat(d.year3)||0:0);
+      rowHtml += `
             <button type="button" class="rm-btn expense-rm" data-i="${i}" title="Remove">
               <span class="material-icons-round">delete_outline</span>
             </button>
           </div>
           <div style="text-align:right;font-size:0.78rem;color:var(--c-text-muted);margin-top:4px;">
-            Row total: ৳ <span class="row-total">${((d.year1||0)+(d.year2||0)+(d.year3||0)).toLocaleString()}</span>
+            Row total: ৳ <span class="row-total">${rt.toLocaleString()}</span>
           </div>
-        </div>`);
+        </div>`;
+      wrap.append(rowHtml);
     });
     updateExpenseTotals();
   }
 
   function updateExpenseTotals(){
+    const yr = getYearCols();
     let total = 0;
-    directExpenses.forEach(d => { total += (parseFloat(d.year1)||0)+(parseFloat(d.year2)||0)+(parseFloat(d.year3)||0); });
+    directExpenses.forEach(d => {
+      total += (parseFloat(d.year1)||0)
+             + (yr>=2 ? parseFloat(d.year2)||0 : 0)
+             + (yr>=3 ? parseFloat(d.year3)||0 : 0);
+    });
     const fmt = '৳ ' + total.toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2});
     $('#expenseSubtotal').text(fmt);
     $('#gt_expense').text(fmt);
@@ -783,8 +899,8 @@ $(function(){
   $(document).on('input change','#directExpenseRows [data-i]', function(){
     const i = $(this).data('i'), k = $(this).data('k');
     directExpenses[i][k] = $(this).val();
-    const r = directExpenses[i];
-    const rt = (parseFloat(r.year1)||0)+(parseFloat(r.year2)||0)+(parseFloat(r.year3)||0);
+    const r = directExpenses[i]; const yr = getYearCols();
+    const rt = (parseFloat(r.year1)||0)+(yr>=2?parseFloat(r.year2)||0:0)+(yr>=3?parseFloat(r.year3)||0:0);
     $(this).closest('.cost-entry').find('.row-total').text(rt.toLocaleString());
     updateExpenseTotals();
   });
@@ -802,31 +918,79 @@ $(function(){
   renderExpenses();
 
   // ── Grand Total ────────────────────────────────────────────────
+  function fmt2(v){ return '৳ '+v.toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
   function updateGrandTotal(){
+    const yr    = getYearCols();
     const staff = parseStaffTotal();
     const exp   = parseExpTotal();
     const total = staff + exp;
-    $('#gt_total').text('৳ ' + total.toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2}));
+
+    // Year-wise breakdown rows
+    let yHtml = '';
+    for(let y=1; y<=yr; y++){
+      const yrS = staffCosts.reduce((s,c)=>(s+(parseFloat(c['year'+y])||0)),0);
+      const yrE = directExpenses.reduce((s,d)=>(s+(parseFloat(d['year'+y])||0)),0);
+      yHtml += `<div class="gt-row" style="border-bottom:1px solid rgba(255,255,255,.12);padding-bottom:4px;margin-bottom:4px;">
+        <span>Year ${y} Total</span><span>${fmt2(yrS+yrE)}</span>
+      </div>`;
+    }
+    $('#gt_year_rows').html(yHtml);
+    $('#gt_staff').text(fmt2(staff));
+    $('#gt_expense').text(fmt2(exp));
+    $('#gt_total').text(fmt2(total));
   }
   function parseStaffTotal(){
-    return staffCosts.reduce((s,c)=>(s+(parseFloat(c.year1)||0)+(parseFloat(c.year2)||0)+(parseFloat(c.year3)||0)),0);
+    const yr = getYearCols();
+    return staffCosts.reduce((s,c)=>(s+(parseFloat(c.year1)||0)+(yr>=2?parseFloat(c.year2)||0:0)+(yr>=3?parseFloat(c.year3)||0:0)),0);
   }
   function parseExpTotal(){
-    return directExpenses.reduce((s,d)=>(s+(parseFloat(d.year1)||0)+(parseFloat(d.year2)||0)+(parseFloat(d.year3)||0)),0);
+    const yr = getYearCols();
+    return directExpenses.reduce((s,d)=>(s+(parseFloat(d.year1)||0)+(yr>=2?parseFloat(d.year2)||0:0)+(yr>=3?parseFloat(d.year3)||0:0)),0);
   }
   updateGrandTotal();
 
   // ── Utility ────────────────────────────────────────────────────
   function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-  // ── Form validation ────────────────────────────────────────────
+  // ── Form validation + Summernote sync ─────────────────────────
   $('#submissionForm').on('submit', function(e){
+    // Sync all Summernote fields to their textareas
+    ['sn_specific_objectives','sn_general_objectives','sn_beneficiaries','sn_outputs','literature_review'].forEach(function(id){
+      const $el = $('#'+id);
+      if($el.length && $el.data('summernote')) $el.val($el.summernote('code'));
+    });
+
     const name = $('#confirm_name').val().trim();
     if (!name){ e.preventDefault(); alert('Please enter your full name to confirm the declaration.'); $('#confirm_name').focus(); return false; }
+
+    // Validate LR: if text mode selected, must not be empty
+    if($('#lr_type_text').is(':checked')){
+      const lrVal = ($('#literature_review').data('summernote')
+        ? $('#literature_review').summernote('isEmpty')
+        : $('#literature_review').val().trim()==='');
+      if(lrVal){ e.preventDefault(); alert('Please enter the literature review text or switch to file upload.'); return false; }
+    }
   });
 
-  // ── Select2 for static selects ──────────────────────────────────
-  $('select').each(function(){
+  // ── Summernote initialisation ──────────────────────────────────
+  const snToolbar = [['style',['bold','italic','underline']],['para',['ul','ol']],['misc',['fullscreen']]];
+
+  $('#sn_specific_objectives').summernote({ height:150, toolbar: snToolbar, disableDragAndDrop:true });
+  $('#sn_general_objectives').summernote({ height:150, toolbar: snToolbar, disableDragAndDrop:true });
+  $('#sn_beneficiaries').summernote({ height:150, toolbar: snToolbar, disableDragAndDrop:true });
+  $('#sn_outputs').summernote({ height:150, toolbar: snToolbar, disableDragAndDrop:true });
+  $('#literature_review').summernote({ height:180, toolbar: snToolbar, disableDragAndDrop:true });
+
+  // ── Init budget headers ────────────────────────────────────────
+  updateBudgetHeaders();
+
+  // ── Select2 for static selects (skip summernote wrappers) ─────
+  $('select.no-select2').each(function(){
+    var placeholder = $(this).find('option[value=""]').first().text() || 'Select...';
+    $(this).select2({ width: '100%', placeholder: placeholder, allowClear: true });
+  });
+  $('select:not(.no-select2):not([id^="note"])').each(function(){
     var placeholder = $(this).find('option[value=""]').first().text() || 'Select...';
     $(this).select2({ width: '100%', placeholder: placeholder, allowClear: true });
   });

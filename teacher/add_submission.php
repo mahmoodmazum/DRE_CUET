@@ -10,10 +10,11 @@ $id  = $_POST['id'] ?? null;
 
 $fields = [
     'department_id','year','phase','project_title','pi','co_pi','keywords',
-    'specific_objectives','background','project_status','literature_review_text',
+    'specific_objectives','general_objectives','background','project_status','literature_review_text',
+    'literature_review',
     'research_type','beneficiaries','outputs','transfer','organizational_outcomes',
     'national_impacts','external_org','activities','milestones',
-    'start_date','duration_months','other_grants','contractual_obligations','ip_ownership',
+    'duration_months','other_grants','contractual_obligations','ip_ownership',
     'confirm_name'
 ];
 
@@ -68,16 +69,35 @@ function save_attachment($fileField, $submissionId, $type, $pdo, $extraExts = []
 try {
     if ($id) {
         // ── UPDATE ──────────────────────────────────────────────
+        // Handle literature review mutual exclusion
+        $lr_input_type = $_POST['lr_input_type'] ?? 'file';
+        if ($lr_input_type === 'text') {
+            // Clear any existing l_rev file attachment
+            $lrStmt = $pdo->prepare("SELECT * FROM submission_attachments WHERE submission_id=? AND type='l_rev'");
+            $lrStmt->execute([$id]);
+            $lrExisting = $lrStmt->fetch();
+            if ($lrExisting) {
+                $ep = __DIR__ . '/../' . $lrExisting['file_path'];
+                if (file_exists($ep)) unlink($ep);
+                $pdo->prepare("DELETE FROM submission_attachments WHERE id=?")->execute([$lrExisting['id']]);
+            }
+        } else {
+            // File mode: clear text field
+            $data['literature_review'] = null;
+        }
+
         $sql = "UPDATE submissions SET
             department_id=:department_id, year=:year, phase=:phase,
             project_title=:project_title, pi=:pi, co_pi=:co_pi, keywords=:keywords,
-            specific_objectives=:specific_objectives, background=:background,
+            specific_objectives=:specific_objectives, general_objectives=:general_objectives,
+            background=:background,
             project_status=:project_status, literature_review_text=:literature_review_text,
+            literature_review=:literature_review,
             research_type=:research_type, beneficiaries=:beneficiaries, outputs=:outputs,
             transfer=:transfer, organizational_outcomes=:organizational_outcomes,
             national_impacts=:national_impacts, external_org=:external_org,
             project_team=:project_team, activities=:activities, milestones=:milestones,
-            start_date=:start_date, duration_months=:duration_months,
+            duration_months=:duration_months,
             staff_costs=:staff_costs, direct_expenses=:direct_expenses,
             other_grants=:other_grants, contractual_obligations=:contractual_obligations,
             ip_ownership=:ip_ownership, confirm_name=:confirm_name,
@@ -113,20 +133,27 @@ try {
         if (!$pc) { exit('No active proposal call available.'); }
         $pcid = $pc['id'];
 
+        $lr_input_type = $_POST['lr_input_type'] ?? 'file';
+        if ($lr_input_type !== 'text') {
+            $data['literature_review'] = null;
+        }
+
         $sql = "INSERT INTO submissions (
             user_id, paper_call_id, department_id, year, phase, project_title, pi, co_pi, keywords,
-            specific_objectives, background, project_status, literature_review_text,
+            specific_objectives, general_objectives, background, project_status, literature_review_text,
+            literature_review,
             research_type, beneficiaries, outputs, transfer, organizational_outcomes,
             national_impacts, external_org, project_team, activities, milestones,
-            start_date, duration_months, staff_costs, direct_expenses,
+            duration_months, staff_costs, direct_expenses,
             other_grants, contractual_obligations, ip_ownership, confirm_name,
             acknowledgement, status
         ) VALUES (
             :user_id, :paper_call_id, :department_id, :year, :phase, :project_title,
-            :pi, :co_pi, :keywords, :specific_objectives, :background, :project_status,
-            :literature_review_text, :research_type, :beneficiaries, :outputs, :transfer,
+            :pi, :co_pi, :keywords, :specific_objectives, :general_objectives, :background,
+            :project_status, :literature_review_text, :literature_review,
+            :research_type, :beneficiaries, :outputs, :transfer,
             :organizational_outcomes, :national_impacts, :external_org, :project_team,
-            :activities, :milestones, :start_date, :duration_months,
+            :activities, :milestones, :duration_months,
             :staff_costs, :direct_expenses, :other_grants, :contractual_obligations,
             :ip_ownership, :confirm_name, :acknowledge, 'submitted'
         )";

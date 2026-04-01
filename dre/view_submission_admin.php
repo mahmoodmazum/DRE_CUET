@@ -25,9 +25,12 @@ if (!$submission) { exit('Submission not found'); }
 $staffCosts     = json_decode($submission['staff_costs'],    true) ?: [];
 $projectTeam    = json_decode($submission['project_team'],   true) ?: [];
 $directExpenses = json_decode($submission['direct_expenses'], true) ?: [];
-function rowTotal($r){ return (float)($r['year1']??$r['amount']??0)+(float)($r['year2']??0)+(float)($r['year3']??0); }
-$totalStaff  = array_sum(array_map('rowTotal', $staffCosts));
-$totalDirect = array_sum(array_map('rowTotal', $directExpenses));
+$durMonths      = (int)($submission['duration_months'] ?? 0);
+$durYears       = $durMonths===12 ? 1 : ($durMonths===24 ? 2 : 3);
+function rowTotal($r,$yr=3){ return (float)($r['year1']??$r['amount']??0)+(float)($yr>=2?$r['year2']??0:0)+(float)($yr>=3?$r['year3']??0:0); }
+function yearVal($r,$y){ return (float)(($y===1)?($r['year1']??$r['amount']??0):($r['year'.($y)]??0)); }
+$totalStaff  = array_sum(array_map(fn($r)=>rowTotal($r,$durYears), $staffCosts));
+$totalDirect = array_sum(array_map(fn($r)=>rowTotal($r,$durYears), $directExpenses));
 $totalCost   = $totalStaff + $totalDirect;
 
 $revStmt = $pdo->prepare("SELECT * FROM reviews WHERE submission_id = ?");
@@ -116,7 +119,8 @@ function ev($v){ return htmlspecialchars($v ?? ''); }
         <tr><th>2a. Principal Investigator (PI)</th><td><?= ev($submission['pi']) ?></td></tr>
         <tr><th>2b. Co-Principal Investigator (Co-PI)</th><td><?= ev($submission['co_pi']) ?></td></tr>
         <tr><th>3. Keywords</th><td><?= ev($submission['keywords']) ?></td></tr>
-        <tr><th>4. Specific Objectives</th><td><?= nl2br(ev($submission['specific_objectives'])) ?></td></tr>
+        <tr><th>4a. Specific Objectives</th><td><?= $submission['specific_objectives'] ? $submission['specific_objectives'] : '<em class="text-muted">—</em>' ?></td></tr>
+        <tr><th>4b. General Objective</th><td><?= $submission['general_objectives'] ? $submission['general_objectives'] : '<em class="text-muted">—</em>' ?></td></tr>
         <tr><th>5a. Project Status</th><td><?= ev($submission['project_status']) ?></td></tr>
         <tr><th>5b. Project Summary</th><td><?= nl2br(ev($submission['literature_review_text'])) ?></td></tr>
         <tr>
@@ -126,12 +130,14 @@ function ev($v){ return htmlspecialchars($v ?? ''); }
               <a href="/DRE/<?= ev($atts['l_rev']['file_path']) ?>" target="_blank" class="file-download-link">
                 <span class="material-icons-round">download</span> <?= ev($atts['l_rev']['original_name']) ?>
               </a>
-            <?php else: ?><em class="text-muted">Not uploaded</em><?php endif; ?>
+            <?php elseif (!empty($submission['literature_review'])): ?>
+              <?= $submission['literature_review'] ?>
+            <?php else: ?><em class="text-muted">Not provided</em><?php endif; ?>
           </td>
         </tr>
         <tr><th>6. Type of Research</th><td><?= ev($submission['research_type']) ?></td></tr>
-        <tr><th>7. Beneficiaries</th><td><?= nl2br(ev($submission['beneficiaries'])) ?></td></tr>
-        <tr><th>8. Expected Outcomes from the Project</th><td><?= nl2br(ev($submission['outputs'])) ?></td></tr>
+        <tr><th>7. Direct Customers / Beneficiaries</th><td><?= $submission['beneficiaries'] ?: '<em class="text-muted">—</em>' ?></td></tr>
+        <tr><th>8. Expected Outcomes from the Project</th><td><?= $submission['outputs'] ?: '<em class="text-muted">—</em>' ?></td></tr>
         <tr><th>9. Technology Transfer</th><td><?= nl2br(ev($submission['transfer'])) ?></td></tr>
         <tr><th>10. Organizational Expected Outcomes</th><td><?= nl2br(ev($submission['organizational_outcomes'])) ?></td></tr>
         <tr><th>11. National Impacts</th><td><?= nl2br(ev($submission['national_impacts'])) ?></td></tr>
@@ -148,7 +154,7 @@ function ev($v){ return htmlspecialchars($v ?? ''); }
         </tr>
         <tr><th>15. Project Activities</th><td><?= nl2br(ev($submission['activities'])) ?></td></tr>
         <tr><th>16. Key Milestones</th><td><?= nl2br(ev($submission['milestones'])) ?></td></tr>
-        <tr><th>17. Start Date / Duration</th><td><?= ev($submission['start_date'] ?? '—') ?> / <?= ev($submission['duration_months'] ?? '—') ?> months</td></tr>
+        <tr><th>17. Duration</th><td><?= ev($submission['duration_months'] ?? '—') ?> months</td></tr>
         <tr><th>21. Other Grants</th><td><?= nl2br(ev($submission['other_grants'])) ?></td></tr>
         <tr><th>22. Contractual Obligations</th><td><?= nl2br(ev($submission['contractual_obligations'])) ?></td></tr>
         <tr><th>23. IP Ownership</th><td><?= nl2br(ev($submission['ip_ownership'])) ?></td></tr>
@@ -199,6 +205,11 @@ function ev($v){ return htmlspecialchars($v ?? ''); }
   <?php endif; ?>
 
   <!-- Budget -->
+  <?php
+  // Build year column headers based on duration
+  $yrCols = [];
+  for($y=1;$y<=$durYears;$y++) $yrCols[] = $y;
+  ?>
   <div class="budget-grid">
     <div class="detail-section" style="margin-bottom:0;">
       <div class="ds-header">
@@ -209,23 +220,25 @@ function ev($v){ return htmlspecialchars($v ?? ''); }
         <table class="det-table">
           <thead>
             <tr>
-              <th>Category</th><th>Year 1</th><th>Year 2</th><th>Year 3</th><th>Total</th>
+              <th>Category</th>
+              <?php foreach($yrCols as $y): ?><th>Year <?=$y?></th><?php endforeach; ?>
+              <th>Total</th>
             </tr>
           </thead>
           <tbody>
             <?php foreach($staffCosts as $c): ?>
             <tr>
               <td><?= ev($c['category'] ?? '') ?></td>
-              <td><?= number_format((float)($c['year1']??$c['amount']??0), 2) ?></td>
-              <td><?= number_format((float)($c['year2']??0), 2) ?></td>
-              <td><?= number_format((float)($c['year3']??0), 2) ?></td>
-              <td style="font-weight:600;">৳ <?= number_format(rowTotal($c), 2) ?></td>
+              <?php foreach($yrCols as $y): ?>
+                <td><?= number_format(yearVal($c,$y), 2) ?></td>
+              <?php endforeach; ?>
+              <td style="font-weight:600;">৳ <?= number_format(rowTotal($c,$durYears), 2) ?></td>
             </tr>
             <?php endforeach; ?>
           </tbody>
           <tfoot>
             <tr style="background:var(--c-primary-bg);">
-              <td colspan="4" style="font-weight:600;padding:10px 16px;border-bottom:none;">Sub-Total</td>
+              <td colspan="<?= count($yrCols)+1 ?>" style="font-weight:600;padding:10px 16px;border-bottom:none;">Sub-Total</td>
               <td style="font-weight:700;color:var(--c-primary-dark);padding:10px 16px;border-bottom:none;">৳ <?= number_format($totalStaff, 2) ?></td>
             </tr>
           </tfoot>
@@ -242,23 +255,25 @@ function ev($v){ return htmlspecialchars($v ?? ''); }
         <table class="det-table">
           <thead>
             <tr>
-              <th>Description</th><th>Year 1</th><th>Year 2</th><th>Year 3</th><th>Total</th>
+              <th>Description</th>
+              <?php foreach($yrCols as $y): ?><th>Year <?=$y?></th><?php endforeach; ?>
+              <th>Total</th>
             </tr>
           </thead>
           <tbody>
             <?php foreach($directExpenses as $d): ?>
             <tr>
               <td><?= ev($d['description'] ?? $d['category'] ?? '') ?></td>
-              <td><?= number_format((float)($d['year1']??$d['amount']??0), 2) ?></td>
-              <td><?= number_format((float)($d['year2']??0), 2) ?></td>
-              <td><?= number_format((float)($d['year3']??0), 2) ?></td>
-              <td style="font-weight:600;">৳ <?= number_format(rowTotal($d), 2) ?></td>
+              <?php foreach($yrCols as $y): ?>
+                <td><?= number_format(yearVal($d,$y), 2) ?></td>
+              <?php endforeach; ?>
+              <td style="font-weight:600;">৳ <?= number_format(rowTotal($d,$durYears), 2) ?></td>
             </tr>
             <?php endforeach; ?>
           </tbody>
           <tfoot>
             <tr style="background:var(--c-primary-bg);">
-              <td colspan="4" style="font-weight:600;padding:10px 16px;border-bottom:none;">Sub-Total</td>
+              <td colspan="<?= count($yrCols)+1 ?>" style="font-weight:600;padding:10px 16px;border-bottom:none;">Sub-Total</td>
               <td style="font-weight:700;color:var(--c-primary-dark);padding:10px 16px;border-bottom:none;">৳ <?= number_format($totalDirect, 2) ?></td>
             </tr>
           </tfoot>
@@ -268,12 +283,26 @@ function ev($v){ return htmlspecialchars($v ?? ''); }
   </div>
 
   <!-- Grand Total -->
-  <div class="grand-total-band" style="margin-top:20px;">
-    <div>
-      <div class="label">20. Grand Total</div>
-      <div class="sub">Staff: ৳<?= number_format($totalStaff,2) ?> + Direct: ৳<?= number_format($totalDirect,2) ?></div>
+  <div class="grand-total-band" style="margin-top:20px;flex-direction:column;align-items:stretch;gap:8px;">
+    <div style="font-size:0.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.75;">20. Total Cost</div>
+    <?php for($y=1;$y<=$durYears;$y++):
+      $yrS = array_sum(array_map(fn($r)=>yearVal($r,$y),$staffCosts));
+      $yrE = array_sum(array_map(fn($r)=>yearVal($r,$y),$directExpenses));
+    ?>
+    <div style="display:flex;justify-content:space-between;font-size:0.875rem;opacity:.9;border-bottom:1px solid rgba(255,255,255,.15);padding-bottom:4px;">
+      <span>Year <?=$y?> Total</span><span>৳ <?= number_format($yrS+$yrE,2) ?></span>
     </div>
-    <div class="value">৳ <?= number_format($totalCost, 2) ?></div>
+    <?php endfor; ?>
+    <div style="display:flex;justify-content:space-between;font-size:0.875rem;opacity:.85;">
+      <span>Sub-Total Staff Costs</span><span>৳ <?= number_format($totalStaff,2) ?></span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:0.875rem;opacity:.85;">
+      <span>Sub-Total Direct Expenses</span><span>৳ <?= number_format($totalDirect,2) ?></span>
+    </div>
+    <div style="display:flex;justify-content:space-between;border-top:1px solid rgba(255,255,255,.3);padding-top:10px;margin-top:4px;">
+      <span style="font-size:1rem;font-weight:700;">Grand Total</span>
+      <span style="font-size:1.4rem;font-weight:700;">৳ <?= number_format($totalCost,2) ?></span>
+    </div>
   </div>
 
   <!-- Uploaded Files -->

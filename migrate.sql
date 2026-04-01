@@ -13,6 +13,26 @@ ALTER TABLE `submissions`
   ADD COLUMN `confirm_name` VARCHAR(255) DEFAULT NULL
   AFTER `ip_ownership`;
 
+-- 3. Add general_objectives column (Section 4b)
+ALTER TABLE `submissions`
+  ADD COLUMN IF NOT EXISTS `general_objectives` LONGTEXT DEFAULT NULL
+  AFTER `specific_objectives`;
+
+-- 4. Email log table for paper calls
+CREATE TABLE IF NOT EXISTS `paper_call_email_log` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `paper_call_id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `email` varchar(191) NOT NULL,
+  `name` varchar(191) DEFAULT NULL,
+  `status` enum('sent','failed') NOT NULL DEFAULT 'sent',
+  `error_msg` text DEFAULT NULL,
+  `sent_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `paper_call_id` (`paper_call_id`),
+  CONSTRAINT `fk_pcel_pc` FOREIGN KEY (`paper_call_id`) REFERENCES `paper_calls` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 -- ============================================================
 -- Notes on data migration:
 -- • Existing submissions: staff_costs and direct_expenses stored

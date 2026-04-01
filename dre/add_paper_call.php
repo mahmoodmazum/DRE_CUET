@@ -75,8 +75,8 @@ if (!empty($_FILES['attachments']['name'][0])) {
 
 // ---------------- EMAIL CONTENT ----------------
 $teachers = $pdo->query("
-    SELECT email, name 
-    FROM users 
+    SELECT id, email, name
+    FROM users
     WHERE role='teacher' AND status='active'
 ")->fetchAll();
 
@@ -122,8 +122,16 @@ if ($attachmentsListHtml) {
 }
 
 // ---------------- SEND EMAIL (GMAIL SMTP) ----------------
+$logStmt = $pdo->prepare("
+    INSERT INTO paper_call_email_log (paper_call_id, user_id, email, name, status, error_msg)
+    VALUES (?, ?, ?, ?, ?, ?)
+");
+
 foreach ($teachers as $t) {
     if (empty($t['email'])) continue;
+
+    $status   = 'failed';
+    $errorMsg = null;
 
     try {
         $mail = new PHPMailer(true);
@@ -143,10 +151,22 @@ foreach ($teachers as $t) {
         $mail->Body    = $bodyHtml;
 
         $mail->send();
+        $status = 'sent';
 
     } catch (Exception $e) {
-        error_log("Email to {$t['email']} failed: " . $mail->ErrorInfo);
+        $errorMsg = $mail->ErrorInfo;
+        error_log("Email to {$t['email']} failed: " . $errorMsg);
     }
+
+    // Log this send attempt
+    $logStmt->execute([
+        $pcid,
+        $t['id'] ?? null,
+        $t['email'],
+        $t['name'],
+        $status,
+        $errorMsg
+    ]);
 }
 
 // ---------------- REDIRECT ----------------

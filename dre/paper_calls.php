@@ -84,47 +84,69 @@ $i = 1;
                 </a>
               <?php endforeach; ?>
             </td>
-            <td style="white-space:nowrap;">
-              <a href="view_active_paper_call.php?id=<?= $c['id'] ?>" class="btn btn-outline btn-sm" style="margin-bottom:4px;">
-                <span class="material-icons-round">visibility</span> View
-              </a>
-
-              <form method="post" action="edit_deadline.php" style="display:inline-block;margin-bottom:4px;">
-                <input type="hidden" name="id" value="<?= $c['id'] ?>">
-                <div style="display:flex;gap:4px;align-items:center;margin-bottom:4px;">
-                  <span style="font-size:0.72rem;font-weight:600;color:var(--c-text-muted);min-width:28px;">Sub</span>
-                  <input type="date" name="deadline_date" class="no-select2"
-                         style="width:140px;font-size:0.8rem;padding:5px 8px;"
-                         value="<?= htmlspecialchars($c['deadline_date']) ?>">
-                </div>
-                <div style="display:flex;gap:4px;align-items:center;margin-bottom:4px;">
-                  <span style="font-size:0.72rem;font-weight:600;color:var(--c-text-muted);min-width:28px;">Rev</span>
-                  <input type="date" name="review_deadline" class="no-select2"
-                         style="width:140px;font-size:0.8rem;padding:5px 8px;"
-                         value="<?= htmlspecialchars($c['review_deadline'] ?? '') ?>">
-                </div>
-                <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center;">
-                  <span class="material-icons-round">save</span> Update Deadline
+            <td>
+              <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                <a href="view_active_paper_call.php?id=<?= $c['id'] ?>" class="btn btn-outline btn-sm">
+                  <span class="material-icons-round">visibility</span> View
+                </a>
+                <a href="paper_call_email_log.php?id=<?= $c['id'] ?>" class="btn btn-outline btn-sm">
+                  <span class="material-icons-round">email</span> Email Log
+                </a>
+                <button type="button" class="btn btn-primary btn-sm btn-edit-deadline"
+                  data-id="<?= $c['id'] ?>"
+                  data-deadline="<?= htmlspecialchars($c['deadline_date']) ?>"
+                  data-review="<?= htmlspecialchars($c['review_deadline'] ?? '') ?>">
+                  <span class="material-icons-round">edit_calendar</span> Edit Deadline
                 </button>
-              </form>
-
-              <?php if (!$passed): ?>
-                <form style="display:block;margin-top:4px;" method="post" action="delete_call.php"
+                <?php if (!$passed): ?>
+                <form method="post" action="delete_call.php" style="display:inline;"
                       onsubmit="return confirm('Delete this Proposal Call? This cannot be undone.');">
                   <input type="hidden" name="id" value="<?= $c['id'] ?>">
-                  <button class="btn btn-danger btn-sm" style="width:100%;justify-content:center;">
+                  <button class="btn btn-danger btn-sm">
                     <span class="material-icons-round">delete_outline</span> Delete
                   </button>
                 </form>
-              <?php else: ?>
-                <span class="badge badge-secondary" style="display:block;text-align:center;margin-top:4px;">Deadline Passed</span>
-              <?php endif; ?>
+                <?php else: ?>
+                  <span class="badge badge-secondary">Deadline Passed</span>
+                <?php endif; ?>
+              </div>
             </td>
           </tr>
         <?php endforeach; ?>
         </tbody>
       </table>
     </div>
+  </div>
+</div>
+
+<!-- Edit Deadline Modal -->
+<div class="modal-backdrop" id="editDeadlineModal">
+  <div class="modal-box" style="max-width:420px;">
+    <form method="post" action="edit_deadline.php">
+      <input type="hidden" name="id" id="edit_pc_id">
+      <div class="modal-header">
+        <h3><span class="material-icons-round" style="vertical-align:middle;font-size:18px;margin-right:6px;">edit_calendar</span> Edit Deadline</h3>
+        <button type="button" class="modal-close" onclick="document.getElementById('editDeadlineModal').classList.remove('show')">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="field-label">Submission Deadline <span style="color:var(--c-danger)">*</span></label>
+          <input type="date" name="deadline_date" id="edit_deadline_date" class="no-select2" required>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Review Deadline</label>
+          <input type="date" name="review_deadline" id="edit_review_deadline" class="no-select2">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('editDeadlineModal').classList.remove('show')">Cancel</button>
+        <button type="submit" class="btn btn-primary">
+          <span class="material-icons-round">save</span> Update &amp; Notify Teachers
+        </button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -179,12 +201,24 @@ $i = 1;
 <?php include __DIR__ . '/../src/includes/custom_footer.php'; ?>
 <script>
 $(function(){
-  $('#callsTable').DataTable({responsive:true, order:[[0,'desc']]});
-  // Close modal on backdrop click
-  document.getElementById('createCallModal').addEventListener('click', function(e){
-    if(e.target === this) this.classList.remove('show');
+  $('#callsTable').DataTable({responsive:true, order:[[0,'desc']], columnDefs:[{orderable:false, targets:-1}]});
+
+  // Edit Deadline modal
+  $(document).on('click', '.btn-edit-deadline', function(){
+    const $btn = $(this);
+    $('#edit_pc_id').val($btn.data('id'));
+    $('#edit_deadline_date').val($btn.data('deadline'));
+    $('#edit_review_deadline').val($btn.data('review'));
+    document.getElementById('editDeadlineModal').classList.add('show');
   });
-  // Select2 for static selects
+
+  // Close modals on backdrop click
+  ['createCallModal','editDeadlineModal'].forEach(function(id){
+    document.getElementById(id).addEventListener('click', function(e){
+      if(e.target === this) this.classList.remove('show');
+    });
+  });
+
   $('select:not(.no-select2)').select2({theme:'default',width:'100%',allowClear:true});
 });
 </script>

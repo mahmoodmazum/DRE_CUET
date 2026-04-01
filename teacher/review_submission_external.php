@@ -71,24 +71,28 @@ include __DIR__ . '/../src/includes/sidebar_external.php';
       <div class="card-header"><h3>Proposal Information</h3></div>
       <div class="card-body" style="padding:0;">
         <table class="info-table">
-          <tr><th>Project Title</th><td><strong><?= htmlspecialchars($submission['project_title']) ?></strong></td></tr>
-          <tr><th>PI</th><td><?= htmlspecialchars($submission['pi'] ?? 'N/A') ?></td></tr>
-          <tr><th>Co-PI</th><td><?= htmlspecialchars($submission['co_pi'] ?? 'N/A') ?></td></tr>
           <tr><th>Department</th><td><?= htmlspecialchars($submission['department_name'] ?? 'N/A') ?></td></tr>
           <tr><th>Year / Phase</th><td><?= htmlspecialchars($submission['year']??'') ?> / <?= htmlspecialchars($submission['phase']??'') ?></td></tr>
-          <tr><th>Keywords</th><td><?= htmlspecialchars($submission['keywords'] ?? 'N/A') ?></td></tr>
-          <tr><th>5b. Project Summary</th><td><?= nl2br(htmlspecialchars($submission['literature_review_text'] ?? 'N/A')) ?></td></tr>
+          <tr><th>1. Project Title</th><td><strong><?= htmlspecialchars($submission['project_title']) ?></strong></td></tr>
+          <tr><th>2a. Principal Investigator (PI)</th><td><?= htmlspecialchars($submission['pi'] ?? 'N/A') ?></td></tr>
+          <tr><th>2b. Co-Principal Investigator (Co-PI)</th><td><?= htmlspecialchars($submission['co_pi'] ?? 'N/A') ?></td></tr>
+          <tr><th>3. Key Words</th><td><?= htmlspecialchars($submission['keywords'] ?? 'N/A') ?></td></tr>
+          <tr><th>4a. Specific Objectives of the Project</th><td><?= $submission['specific_objectives'] ?: '<em class="text-muted">—</em>' ?></td></tr>
+          <tr><th>4b. General Objective of the Project</th><td><?= $submission['general_objectives'] ?: '<em class="text-muted">—</em>' ?></td></tr>
+          <tr><th>5a. Project Status</th><td><?= htmlspecialchars($submission['project_status'] ?? 'N/A') ?></td></tr>
+          <tr><th>5b. Project Summary</th><td><?= nl2br(htmlspecialchars($submission['literature_review_text'] ?? '')) ?: '<em class="text-muted">—</em>' ?></td></tr>
           <tr><th>5c. Literature Review &amp; Related Research</th>
               <td><?php if (isset($atts['l_rev'])): ?>
                 <a href="/DRE/<?= htmlspecialchars($atts['l_rev']['file_path']) ?>" target="_blank" class="btn btn-outline btn-sm">
                   <span class="material-icons-round">download</span> <?= htmlspecialchars($atts['l_rev']['original_name']) ?>
                 </a>
-              <?php else: ?><em class="text-muted">Not uploaded</em><?php endif; ?></td>
+              <?php elseif (!empty($submission['literature_review'])): ?>
+                <div style="font-size:0.875rem;"><?= $submission['literature_review'] ?></div>
+              <?php else: ?><em class="text-muted">No submission provided</em><?php endif; ?></td>
           </tr>
-          <tr><th>4. Specific Objectives</th><td><?= nl2br(htmlspecialchars($submission['specific_objectives'] ?? 'N/A')) ?></td></tr>
-          <tr><th>8. Expected Outcomes</th><td><?= htmlspecialchars($submission['outputs'] ?? 'N/A') ?></td></tr>
-          <tr><th>10. Organizational Expected Outcomes</th><td><?= htmlspecialchars($submission['organizational_outcomes'] ?? 'N/A') ?></td></tr>
-          <tr><th>11. National Impacts</th><td><?= htmlspecialchars($submission['national_impacts'] ?? 'N/A') ?></td></tr>
+          <tr><th>8. Expected Outcomes</th><td><?= $submission['outputs'] ?: '<em class="text-muted">—</em>' ?></td></tr>
+          <tr><th>10. Organizational Expected Outcomes</th><td><?= nl2br(htmlspecialchars($submission['organizational_outcomes'] ?? '')) ?: '<em class="text-muted">—</em>' ?></td></tr>
+          <tr><th>11. National Impacts</th><td><?= nl2br(htmlspecialchars($submission['national_impacts'] ?? '')) ?: '<em class="text-muted">—</em>' ?></td></tr>
           <tr><th>14. Research Methodology</th>
               <td><?php if (isset($atts['methodology'])): ?>
                 <a href="/DRE/<?= htmlspecialchars($atts['methodology']['file_path']) ?>" target="_blank" class="btn btn-outline btn-sm">
@@ -96,8 +100,8 @@ include __DIR__ . '/../src/includes/sidebar_external.php';
                 </a>
               <?php else: ?><em class="text-muted">Not uploaded</em><?php endif; ?></td>
           </tr>
-          <tr><th>15. Project Activities</th><td><?= nl2br(htmlspecialchars($submission['activities'] ?? 'N/A')) ?></td></tr>
-          <tr><th>16. Key Milestones</th><td><?= nl2br(htmlspecialchars($submission['milestones'] ?? 'N/A')) ?></td></tr>
+          <tr><th>15. Project Activities</th><td><?= nl2br(htmlspecialchars($submission['activities'] ?? '')) ?: '<em class="text-muted">—</em>' ?></td></tr>
+          <tr><th>16. Key Milestones</th><td><?= nl2br(htmlspecialchars($submission['milestones'] ?? '')) ?: '<em class="text-muted">—</em>' ?></td></tr>
         </table>
       </div>
     </div>
